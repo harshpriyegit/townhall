@@ -1,0 +1,432 @@
+/* ============================================================
+   Anonymous Wall — Premium White Theme
+   ============================================================ */
+
+.anonymous-page {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  padding: 40px 24px 80px;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.anonymous-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.anonymous-header {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeInDown 0.6s ease forwards;
+}
+
+.anonymous-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.anonymous-header p {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.anonymous-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ── Compose Card ────────────────────────────────────────────── */
+.anon-compose {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: 24px;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.anon-compose-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.anon-compose-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.anon-compose-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.anon-compose textarea {
+  width: 100%;
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  resize: vertical;
+  transition: var(--transition);
+  line-height: 1.6;
+}
+
+.anon-compose textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+.anon-compose textarea::placeholder {
+  color: var(--text-light);
+}
+
+.anon-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.anon-post-btn {
+  padding: 10px 28px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.anon-post-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.anon-post-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Feed ────────────────────────────────────────────────────── */
+.anon-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.anon-post-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+  animation: fadeInUp 0.5s ease forwards;
+  animation-fill-mode: both;
+}
+
+.anon-post-card:nth-child(1) { animation-delay: 0.05s; }
+.anon-post-card:nth-child(2) { animation-delay: 0.1s; }
+.anon-post-card:nth-child(3) { animation-delay: 0.15s; }
+.anon-post-card:nth-child(4) { animation-delay: 0.2s; }
+.anon-post-card:nth-child(5) { animation-delay: 0.25s; }
+.anon-post-card:nth-child(6) { animation-delay: 0.3s; }
+.anon-post-card:nth-child(7) { animation-delay: 0.35s; }
+.anon-post-card:nth-child(8) { animation-delay: 0.4s; }
+
+.anon-post-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+}
+
+.anon-post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.anon-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.anon-post-meta {
+  flex: 1;
+}
+
+.anon-post-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.anon-post-id {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  background: var(--bg-tertiary);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.anon-post-time {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.anon-post-body {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* ── Reactions ───────────────────────────────────────────────── */
+.anon-reactions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.anon-reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.anon-reaction-btn:hover {
+  border-color: var(--border);
+  background: var(--bg-secondary);
+  transform: scale(1.05);
+}
+
+.anon-reaction-btn.active {
+  border-color: var(--accent);
+  background: rgba(45, 45, 45, 0.06);
+  font-weight: 600;
+}
+
+.anon-reaction-count {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.anon-report-btn {
+  margin-left: auto;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: var(--transition);
+  border-radius: 6px;
+}
+
+.anon-report-btn:hover {
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+}
+
+/* ── Voice Rooms Sidebar ─────────────────────────────────────── */
+.voice-rooms-sidebar {
+  position: sticky;
+  top: 24px;
+  animation: slideInRight 0.6s ease forwards;
+}
+
+.voice-rooms-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+.voice-rooms-title {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-room-item {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: 12px;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.voice-room-item:last-child {
+  margin-bottom: 0;
+}
+
+.voice-room-item:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.voice-room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.voice-room-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.voice-room-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.voice-room-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #E53935;
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(229, 57, 53, 0); }
+}
+
+.voice-room-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-room-listeners {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.voice-room-join-btn {
+  padding: 6px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.voice-room-join-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .anonymous-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-rooms-sidebar {
+    position: static;
+    order: -1;
+  }
+
+  .anonymous-header h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .anonymous-page {
+    padding: 24px 16px 60px;
+  }
+
+  .anonymous-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .anon-post-card {
+    padding: 18px;
+  }
+
+  .anon-compose {
+    padding: 20px;
+  }
+
+  .anon-reactions {
+    gap: 6px;
+  }
+
+  .anon-reaction-btn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+}

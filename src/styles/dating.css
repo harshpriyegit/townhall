@@ -1,0 +1,425 @@
+/* ============================================================
+   Dating — Premium White Theme
+   ============================================================ */
+
+.dating-page {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  padding: 40px 24px 80px;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.dating-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.dating-header {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.6s ease forwards;
+}
+
+.dating-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.dating-header p {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.dating-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ── Card Stack ──────────────────────────────────────────────── */
+.dating-card-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dating-card-wrapper {
+  position: relative;
+  width: 400px;
+  height: 520px;
+  margin-bottom: 32px;
+}
+
+.dating-card {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  cursor: grab;
+}
+
+.dating-card.swiping-left {
+  transform: translateX(-150%) rotate(-15deg);
+  opacity: 0;
+}
+
+.dating-card.swiping-right {
+  transform: translateX(150%) rotate(15deg);
+  opacity: 0;
+}
+
+.dating-card-bg {
+  width: 100%;
+  height: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dating-card-gradient {
+  position: absolute;
+  inset: 0;
+  opacity: 0.85;
+}
+
+.dating-card-gradient.g1 { background: linear-gradient(135deg, #f5f5f5, #e8e8e8, #d5d5d5); }
+.dating-card-gradient.g2 { background: linear-gradient(135deg, #e0e0e0, #bdbdbd, #d5d5d5); }
+.dating-card-gradient.g3 { background: linear-gradient(135deg, #eeeeee, #e0e0e0, #bdbdbd); }
+.dating-card-gradient.g4 { background: linear-gradient(135deg, #d5d5d5, #e0e0e0, #eeeeee); }
+.dating-card-gradient.g5 { background: linear-gradient(135deg, #e8e8e8, #f5f5f5, #e0e0e0); }
+
+.dating-card-initials {
+  position: relative;
+  z-index: 1;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-md);
+}
+
+.dating-card-info {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dating-card-name {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dating-card-branch {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.dating-card-bio {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.dating-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dating-tag {
+  padding: 4px 12px;
+  border-radius: 50px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Stack behind cards */
+.dating-card-stack-1 {
+  transform: scale(0.95) translateY(8px);
+  z-index: 1;
+}
+
+.dating-card-stack-2 {
+  transform: scale(0.9) translateY(16px);
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.dating-card-active {
+  z-index: 2;
+}
+
+/* ── Action Buttons ──────────────────────────────────────────── */
+.dating-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.dating-action-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.dating-action-btn:hover {
+  transform: scale(1.12);
+  box-shadow: var(--shadow-md);
+}
+
+.dating-action-btn:active {
+  transform: scale(0.95);
+}
+
+.dating-action-btn.pass {
+  border-color: rgba(229, 57, 53, 0.2);
+}
+
+.dating-action-btn.pass:hover {
+  border-color: rgba(229, 57, 53, 0.4);
+  background: rgba(229, 57, 53, 0.03);
+}
+
+.dating-action-btn.super {
+  width: 48px;
+  height: 48px;
+  font-size: 1.2rem;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.dating-action-btn.super:hover {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.03);
+}
+
+.dating-action-btn.like {
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.dating-action-btn.like:hover {
+  border-color: rgba(76, 175, 80, 0.4);
+  background: rgba(76, 175, 80, 0.03);
+}
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.dating-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.dating-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.dating-empty h3 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.dating-empty p {
+  font-size: 0.9rem;
+}
+
+/* ── Matches Sidebar ─────────────────────────────────────────── */
+.dating-sidebar {
+  position: sticky;
+  top: 24px;
+  animation: slideInRight 0.6s ease forwards;
+}
+
+.dating-matches-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: 20px;
+}
+
+.dating-matches-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.dating-matches-count {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.dating-matches-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.dating-match-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dating-match-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 2px solid var(--border);
+  transition: var(--transition);
+}
+
+.dating-match-item:hover .dating-match-avatar {
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+
+.dating-match-name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: center;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Setup Card ──────────────────────────────────────────────── */
+.dating-setup-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+.dating-setup-title {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.dating-setup-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.dating-setup-item:last-child {
+  border-bottom: none;
+}
+
+.dating-setup-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .dating-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dating-sidebar {
+    position: static;
+    order: -1;
+  }
+
+  .dating-matches-scroll {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 500px) {
+  .dating-page {
+    padding: 24px 16px 60px;
+  }
+
+  .dating-header h1 {
+    font-size: 2rem;
+  }
+
+  .dating-card-wrapper {
+    width: 100%;
+    max-width: 340px;
+    height: 460px;
+  }
+
+  .dating-action-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+  }
+
+  .dating-action-btn.super {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+}

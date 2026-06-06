@@ -1,0 +1,478 @@
+/* ============================================================
+   Voice Rooms — Premium White Theme
+   ============================================================ */
+
+.voice-rooms-page {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  padding: 40px 24px 80px;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.voice-rooms-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.vr-header {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.6s ease forwards;
+}
+
+.vr-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.vr-header p {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+.vr-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.vr-create-btn {
+  padding: 12px 28px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vr-create-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ── Room Grid ───────────────────────────────────────────────── */
+.vr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.vr-room-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+  animation: fadeInUp 0.5s ease forwards;
+  animation-fill-mode: both;
+  cursor: pointer;
+}
+
+.vr-room-card:nth-child(1) { animation-delay: 0.05s; }
+.vr-room-card:nth-child(2) { animation-delay: 0.1s; }
+.vr-room-card:nth-child(3) { animation-delay: 0.15s; }
+.vr-room-card:nth-child(4) { animation-delay: 0.2s; }
+.vr-room-card:nth-child(5) { animation-delay: 0.25s; }
+.vr-room-card:nth-child(6) { animation-delay: 0.3s; }
+
+.vr-room-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+  transform: translateY(-2px);
+}
+
+.vr-room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.vr-room-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.vr-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(229, 57, 53, 0.06);
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #E53935;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.vr-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #E53935;
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+.vr-topic-badge {
+  display: inline-flex;
+  padding: 4px 12px;
+  border-radius: 50px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.vr-room-participants {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.vr-participant-avatars {
+  display: flex;
+}
+
+.vr-participant-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--bg-card);
+  margin-left: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--text-light);
+}
+
+.vr-participant-dot:first-child {
+  margin-left: 0;
+}
+
+.vr-participant-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.vr-room-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vr-room-duration {
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+
+.vr-join-btn {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.vr-join-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Active Room View ────────────────────────────────────────── */
+.vr-active-room {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+  animation: scaleIn 0.4s ease forwards;
+}
+
+.vr-active-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.vr-active-name {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.vr-active-topic {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.vr-active-count {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-top: 8px;
+}
+
+.vr-participants-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 40px;
+  padding: 20px 0;
+}
+
+.vr-participant-circle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.vr-participant-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--text-light);
+  position: relative;
+  transition: var(--transition);
+}
+
+.vr-participant-avatar.speaking {
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.15);
+  animation: speakPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes speakPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.1); }
+  50% { box-shadow: 0 0 0 6px rgba(45, 45, 45, 0.05); }
+}
+
+.vr-mic-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+}
+
+.vr-participant-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.vr-active-controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-light);
+}
+
+.vr-control-btn {
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.vr-control-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-light);
+}
+
+.vr-control-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.vr-control-btn.leave {
+  background: transparent;
+  color: #E53935;
+  border-color: rgba(229, 57, 53, 0.2);
+}
+
+.vr-control-btn.leave:hover {
+  background: rgba(229, 57, 53, 0.05);
+  border-color: rgba(229, 57, 53, 0.3);
+}
+
+/* ── Create Modal ────────────────────────────────────────────── */
+.vr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.vr-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 36px;
+  width: 90%;
+  max-width: 440px;
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn 0.3s ease forwards;
+}
+
+.vr-modal h2 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+.vr-modal-field {
+  margin-bottom: 18px;
+}
+
+.vr-modal-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.vr-modal-field input,
+.vr-modal-field select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  background: var(--bg-secondary);
+  transition: var(--transition);
+}
+
+.vr-modal-field input:focus,
+.vr-modal-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+.vr-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.vr-modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.vr-modal-cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.vr-modal-cancel:hover {
+  background: var(--bg-secondary);
+}
+
+.vr-modal-submit {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.vr-modal-submit:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .vr-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vr-header h1 {
+    font-size: 2rem;
+  }
+
+  .vr-active-room {
+    padding: 24px;
+  }
+
+  .vr-active-controls {
+    flex-wrap: wrap;
+  }
+
+  .vr-control-btn {
+    padding: 10px 18px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .voice-rooms-page {
+    padding: 24px 16px 60px;
+  }
+
+  .vr-header h1 {
+    font-size: 1.6rem;
+  }
+}

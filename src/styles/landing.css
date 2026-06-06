@@ -1,0 +1,348 @@
+/* ============================================================
+   TownHall — Landing Page Styles
+   Full-viewport hero with floating geometric shapes
+   ============================================================ */
+
+/* ── Floating Shape Keyframes ───────────────────────────────── */
+@keyframes float-1 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(30px, -40px) rotate(5deg);
+  }
+  50% {
+    transform: translate(-20px, -60px) rotate(-3deg);
+  }
+  75% {
+    transform: translate(15px, -20px) rotate(4deg);
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(-40px, 30px) rotate(-6deg);
+  }
+  66% {
+    transform: translate(25px, -35px) rotate(4deg);
+  }
+}
+
+@keyframes float-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(20px, 40px) scale(1.05);
+  }
+}
+
+@keyframes landing-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes logo-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+
+/* ── Landing Page ───────────────────────────────────────────── */
+.landing-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+
+
+/* ── Floating Background Shapes ─────────────────────────────── */
+.landing-floating-shape {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.landing-floating-shape:nth-child(1) {
+  width: 320px;
+  height: 320px;
+  background: #F5F5F5;
+  top: -80px;
+  right: -60px;
+  animation: float-1 20s ease-in-out infinite;
+}
+
+.landing-floating-shape:nth-child(2) {
+  width: 200px;
+  height: 200px;
+  background: #F0F0F0;
+  bottom: 10%;
+  left: -40px;
+  border-radius: 32px;
+  animation: float-2 25s ease-in-out infinite;
+}
+
+.landing-floating-shape:nth-child(3) {
+  width: 140px;
+  height: 140px;
+  background: #E8E8E8;
+  top: 40%;
+  right: 15%;
+  border-radius: 24px;
+  animation: float-3 18s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+.landing-floating-shape:nth-child(4) {
+  width: 100px;
+  height: 100px;
+  background: #F5F5F5;
+  bottom: 20%;
+  right: 35%;
+  animation: float-1 22s ease-in-out infinite reverse;
+  opacity: 0.5;
+}
+
+.landing-floating-shape:nth-child(5) {
+  width: 240px;
+  height: 240px;
+  background: #F0F0F0;
+  top: 15%;
+  left: 10%;
+  border-radius: 40px;
+  animation: float-2 28s ease-in-out infinite;
+  opacity: 0.4;
+}
+
+.landing-floating-shape:nth-child(6) {
+  width: 80px;
+  height: 80px;
+  background: #E8E8E8;
+  bottom: 35%;
+  left: 25%;
+  animation: float-3 15s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+
+/* ── Landing Container ──────────────────────────────────────── */
+.landing-container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+
+/* ── Logo / Monogram ────────────────────────────────────────── */
+.landing-logo {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: var(--accent, #2D2D2D);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: logo-reveal 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.landing-logo-text {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+
+/* ── Title ──────────────────────────────────────────────────── */
+.landing-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 4.5rem;
+  color: #1A1A1A;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: landing-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+}
+
+
+/* ── Tagline ────────────────────────────────────────────────── */
+.landing-tagline {
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  font-size: 1.2rem;
+  color: #8A8A8A;
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: landing-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+}
+
+
+/* ── Enter Button ───────────────────────────────────────────── */
+.landing-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 48px;
+  background: #2D2D2D;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  animation: landing-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-enter-btn:hover {
+  background: #1A1A1A;
+  transform: scale(1.02);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+}
+
+.landing-enter-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.landing-enter-btn svg,
+.landing-enter-btn .btn-arrow {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-enter-btn:hover svg,
+.landing-enter-btn:hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+
+/* ── Version / Footer Note ──────────────────────────────────── */
+.landing-version {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #B0B0B0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: landing-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1.2s forwards;
+}
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .landing-title {
+    font-size: 3rem;
+  }
+
+  .landing-tagline {
+    font-size: 1.05rem;
+    max-width: 320px;
+  }
+
+  .landing-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+  }
+
+  .landing-logo-text {
+    font-size: 1.6rem;
+  }
+
+  .landing-enter-btn {
+    padding: 14px 40px;
+    font-size: 0.95rem;
+  }
+
+  .landing-floating-shape:nth-child(1) {
+    width: 200px;
+    height: 200px;
+  }
+
+  .landing-floating-shape:nth-child(5) {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-title {
+    font-size: 2.4rem;
+    letter-spacing: -0.02em;
+  }
+
+  .landing-tagline {
+    font-size: 0.95rem;
+    max-width: 280px;
+    margin-bottom: 40px;
+  }
+
+  .landing-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    margin-bottom: 28px;
+  }
+
+  .landing-logo-text {
+    font-size: 1.4rem;
+  }
+
+  .landing-enter-btn {
+    padding: 14px 36px;
+    font-size: 0.9rem;
+  }
+
+  .landing-floating-shape:nth-child(3),
+  .landing-floating-shape:nth-child(4),
+  .landing-floating-shape:nth-child(6) {
+    display: none;
+  }
+}

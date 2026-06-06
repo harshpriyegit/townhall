@@ -1,0 +1,259 @@
+/* ============================================================
+   TownHall — Profile Page
+   ============================================================ */
+
+/* ── Profile Header ──────────────────────────────────────────── */
+.profile-page {
+  animation: fadeIn 0.4s ease;
+}
+
+.profile-cover {
+  height: 200px;
+  background: linear-gradient(135deg, #F0F0F0 0%, #E8E8E8 50%, #F5F5F5 100%);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  position: relative;
+}
+
+.profile-header-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.profile-header-body {
+  padding: 0 24px 24px;
+  position: relative;
+}
+
+.profile-avatar-wrapper {
+  margin-top: -44px;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--text-secondary);
+  border: 4px solid var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profile-name {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.profile-handle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.profile-bio {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 12px;
+  max-width: 480px;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 28px;
+  margin-top: 20px;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-stat-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+}
+
+.profile-stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-edit-btn {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.profile-edit-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-light);
+}
+
+.profile-follow-btn {
+  padding: 8px 24px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.profile-follow-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-follow-btn.following {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.profile-follow-btn.following:hover {
+  background: #FFF5F5;
+  color: #E53E3E;
+  border-color: #E53E3E;
+}
+
+
+/* ── Profile Tabs ────────────────────────────────────────────── */
+.profile-tabs {
+  display: flex;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.profile-tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+.profile-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+.profile-tab.active {
+  color: var(--text-primary);
+}
+
+.profile-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+
+/* ── Profile Posts ───────────────────────────────────────────── */
+.profile-posts-empty {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+.profile-posts-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.profile-posts-empty p {
+  font-size: 0.95rem;
+}
+
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .profile-cover {
+    height: 140px;
+  }
+
+  .profile-header-body {
+    padding: 0 16px 20px;
+  }
+
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 1.5rem;
+  }
+
+  .profile-avatar-wrapper {
+    margin-top: -36px;
+  }
+
+  .profile-name {
+    font-size: 1.25rem;
+  }
+
+  .profile-stats {
+    gap: 20px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+  }
+}

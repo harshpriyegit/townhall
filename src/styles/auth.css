@@ -1,0 +1,675 @@
+/* ============================================================
+   TownHall — Auth Page Styles (Login & Signup)
+   Split-panel layout with branding left, form right
+   ============================================================ */
+
+/* ── Auth Animations ────────────────────────────────────────── */
+@keyframes auth-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes strength-fill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+
+/* ── Page Layout ────────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  position: relative;
+}
+
+
+/* ── Left Panel (Branding) ──────────────────────────────────── */
+.auth-left {
+  width: 50%;
+  background: var(--bg-secondary, #FAFAFA);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle decorative shapes on the left panel */
+.auth-left::before {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: var(--bg-tertiary, #F5F5F5);
+  top: -80px;
+  right: -80px;
+  pointer-events: none;
+}
+
+.auth-left::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 32px;
+  background: var(--border-light, #F0F0F0);
+  bottom: -40px;
+  left: -40px;
+  pointer-events: none;
+  transform: rotate(15deg);
+}
+
+.auth-left-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 360px;
+}
+
+.auth-left-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--accent, #2D2D2D);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 32px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+.auth-left-logo span {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+}
+
+.auth-left h1 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 2.2rem;
+  color: var(--text-primary, #1A1A1A);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+
+.auth-left p {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted, #8A8A8A);
+  line-height: 1.5;
+}
+
+.auth-left-features {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.auth-left-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #4A4A4A);
+}
+
+.auth-left-feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-primary, #FFFFFF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+
+/* ── Right Panel (Form) ─────────────────────────────────────── */
+.auth-right {
+  width: 50%;
+  background: var(--bg-primary, #FFFFFF);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  animation: auth-slide-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+
+/* ── Form Container ─────────────────────────────────────────── */
+.auth-form-container {
+  max-width: 400px;
+  width: 100%;
+}
+
+
+/* ── Form ────────────────────────────────────────────────────── */
+.auth-form h2 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--text-primary, #1A1A1A);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.auth-form > p {
+  font-size: 0.95rem;
+  color: var(--text-muted, #8A8A8A);
+  margin-bottom: 36px;
+  line-height: 1.5;
+}
+
+.auth-form > p a {
+  color: var(--accent, #2D2D2D);
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.auth-form > p a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+
+/* ── Form Group ─────────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #4A4A4A);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #E8E8E8);
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1A1A1A);
+  background: transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: var(--accent, #2D2D2D);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+.form-group input::placeholder {
+  color: var(--text-light, #B0B0B0);
+  font-weight: 400;
+}
+
+.form-group input.error {
+  border-color: #D4493F;
+}
+
+.form-error {
+  font-size: 0.8rem;
+  color: #D4493F;
+  margin-top: 6px;
+}
+
+/* Input with icon */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  padding-right: 44px;
+}
+
+.input-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light, #B0B0B0);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.input-icon:hover {
+  color: var(--text-secondary, #4A4A4A);
+}
+
+
+/* ── Form Row (side-by-side fields) ─────────────────────────── */
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+
+/* ── Password Strength ──────────────────────────────────────── */
+.password-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.password-strength-segment {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-light, #F0F0F0);
+  overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+.password-strength-segment.active {
+  background: var(--accent, #2D2D2D);
+}
+
+.password-strength-segment.medium {
+  background: #8A8A8A;
+}
+
+.password-strength-segment.weak {
+  background: #B0B0B0;
+}
+
+.password-strength-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted, #8A8A8A);
+  margin-top: 6px;
+  text-align: right;
+}
+
+
+/* ── Custom Checkbox ────────────────────────────────────────── */
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--border, #E8E8E8);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.form-checkbox input[type="checkbox"]:checked {
+  background: var(--accent, #2D2D2D);
+  border-color: var(--accent, #2D2D2D);
+}
+
+.form-checkbox input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 5px;
+  height: 9px;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.form-checkbox input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent, #2D2D2D);
+  outline-offset: 2px;
+}
+
+.form-checkbox span {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #4A4A4A);
+  line-height: 1.4;
+}
+
+.form-checkbox a {
+  color: var(--accent, #2D2D2D);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+
+/* ── Submit Button ──────────────────────────────────────────── */
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent, #2D2D2D);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 4px;
+}
+
+.auth-submit-btn:hover {
+  background: var(--accent-hover, #1A1A1A);
+  box-shadow: var(--shadow-md, 0 4px 20px rgba(0, 0, 0, 0.06));
+}
+
+.auth-submit-btn:active {
+  transform: scale(0.98);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading state */
+.auth-submit-btn.loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.auth-submit-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ── Divider ────────────────────────────────────────────────── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light, #F0F0F0);
+}
+
+.auth-divider span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-light, #B0B0B0);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* ── Auth Link ──────────────────────────────────────────────── */
+.auth-link {
+  color: var(--accent, #2D2D2D);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+/* ── Back Link ──────────────────────────────────────────────── */
+.auth-back-link {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted, #8A8A8A);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  z-index: 10;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 8px);
+}
+
+.auth-back-link:hover {
+  color: var(--text-primary, #1A1A1A);
+  background: var(--bg-tertiary, #F5F5F5);
+}
+
+.auth-back-link svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.auth-back-link:hover svg {
+  transform: translateX(-2px);
+}
+
+
+/* ── Social Auth Buttons ────────────────────────────────────── */
+.auth-social-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border, #E8E8E8);
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1A1A1A);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-social-btn:hover {
+  background: var(--bg-tertiary, #F5F5F5);
+  border-color: var(--text-light, #B0B0B0);
+}
+
+.auth-social-btn:active {
+  transform: scale(0.98);
+}
+
+.auth-social-btn img,
+.auth-social-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* ── Select Dropdown ────────────────────────────────────────── */
+.form-group select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #E8E8E8);
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1A1A1A);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A8A8A' d='M2.146 4.146a.5.5 0 01.708 0L6 7.293l3.146-3.147a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 010-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+.form-group select:focus {
+  border-color: var(--accent, #2D2D2D);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 968px) {
+  .auth-left {
+    width: 45%;
+    padding: 40px;
+  }
+
+  .auth-right {
+    width: 55%;
+    padding: 40px;
+  }
+
+  .auth-left h1 {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-page {
+    flex-direction: column;
+  }
+
+  .auth-left {
+    display: none;
+  }
+
+  .auth-right {
+    width: 100%;
+    min-height: 100vh;
+    padding: 80px 24px 40px;
+    justify-content: flex-start;
+    padding-top: 100px;
+  }
+
+  .auth-form-container {
+    max-width: 440px;
+  }
+
+  /* Show a compact branding section on mobile */
+  .auth-mobile-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+  }
+
+  .auth-mobile-brand .auth-left-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  .auth-mobile-brand .auth-left-logo span {
+    font-size: 1.2rem;
+  }
+
+  .auth-mobile-brand h1 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--text-primary, #1A1A1A);
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-right {
+    padding: 80px 20px 32px;
+  }
+
+  .auth-form h2 {
+    font-size: 1.5rem;
+  }
+
+  .auth-back-link {
+    top: 20px;
+    left: 16px;
+  }
+}
+
+/* Desktop: hide mobile brand section */
+@media (min-width: 769px) {
+  .auth-mobile-brand {
+    display: none;
+  }
+}

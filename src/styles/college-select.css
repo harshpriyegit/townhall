@@ -1,0 +1,361 @@
+/* ============================================================
+   TownHall — College Selection Page Styles
+   Grid of college cards with search
+   ============================================================ */
+
+/* ── Staggered Card Entrance ────────────────────────────────── */
+@keyframes card-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes search-expand {
+  from {
+    opacity: 0;
+    transform: scaleX(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+
+/* ── Page ───────────────────────────────────────────────────── */
+.college-page {
+  min-height: 100vh;
+  background: var(--bg-secondary, #FAFAFA);
+  padding: 80px 24px 60px;
+}
+
+
+/* ── Header ─────────────────────────────────────────────────── */
+.college-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.college-header h1 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  color: var(--text-primary, #1A1A1A);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.college-header p {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text-muted, #8A8A8A);
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+
+/* ── Search ─────────────────────────────────────────────────── */
+.college-search {
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto 48px;
+  animation: search-expand 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+.college-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--text-light, #B0B0B0);
+  pointer-events: none;
+}
+
+.college-search input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  background: var(--bg-primary, #FFFFFF);
+  border: 1px solid var(--border, #E8E8E8);
+  border-radius: var(--radius-md, 12px);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1A1A1A);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.college-search input::placeholder {
+  color: var(--text-light, #B0B0B0);
+  font-weight: 400;
+}
+
+.college-search input:focus {
+  border-color: var(--accent, #2D2D2D);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+
+/* ── Grid ───────────────────────────────────────────────────── */
+.college-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+
+/* ── Card ───────────────────────────────────────────────────── */
+.college-card {
+  background: var(--bg-card, #FFFFFF);
+  border-radius: var(--radius-lg, 20px);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--border-light, #F0F0F0);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  opacity: 0;
+  animation: card-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Staggered animation delays for cards */
+.college-card:nth-child(1) { animation-delay: 0.1s; }
+.college-card:nth-child(2) { animation-delay: 0.18s; }
+.college-card:nth-child(3) { animation-delay: 0.26s; }
+.college-card:nth-child(4) { animation-delay: 0.34s; }
+.college-card:nth-child(5) { animation-delay: 0.42s; }
+.college-card:nth-child(6) { animation-delay: 0.50s; }
+.college-card:nth-child(7) { animation-delay: 0.58s; }
+.college-card:nth-child(8) { animation-delay: 0.66s; }
+.college-card:nth-child(9) { animation-delay: 0.74s; }
+
+.college-card:hover {
+  box-shadow: var(--shadow-lg, 0 8px 40px rgba(0, 0, 0, 0.08));
+  transform: translateY(-4px);
+  border-color: var(--border, #E8E8E8);
+}
+
+.college-card.active {
+  border-color: var(--accent, #2D2D2D);
+  box-shadow:
+    var(--shadow-md, 0 4px 20px rgba(0, 0, 0, 0.06)),
+    0 0 0 1px var(--accent, #2D2D2D);
+}
+
+.college-card.active:hover {
+  box-shadow:
+    var(--shadow-lg, 0 8px 40px rgba(0, 0, 0, 0.08)),
+    0 0 0 1px var(--accent, #2D2D2D);
+}
+
+
+/* ── Coming Soon Card ───────────────────────────────────────── */
+.college-card.coming-soon {
+  opacity: 0;
+  animation: card-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  cursor: default;
+}
+
+.college-card.coming-soon .college-card-logo,
+.college-card.coming-soon .college-card-name,
+.college-card.coming-soon .college-card-location {
+  opacity: 0.4;
+}
+
+
+/* ── Card Logo ──────────────────────────────────────────────── */
+.college-card-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-tertiary, #F5F5F5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--text-secondary, #4A4A4A);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.college-card:hover .college-card-logo {
+  background: var(--border, #E8E8E8);
+}
+
+.college-card.active .college-card-logo {
+  background: var(--accent, #2D2D2D);
+  color: #FFFFFF;
+}
+
+.college-card-logo img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+
+/* ── Card Name ──────────────────────────────────────────────── */
+.college-card-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-primary, #1A1A1A);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+
+/* ── Card Location ──────────────────────────────────────────── */
+.college-card-location {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted, #8A8A8A);
+  line-height: 1.4;
+}
+
+
+/* ── Coming Soon Badge ──────────────────────────────────────── */
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--bg-tertiary, #F5F5F5);
+  color: var(--text-muted, #8A8A8A);
+  margin-top: 12px;
+}
+
+
+/* ── Continue Button (below grid) ───────────────────────────── */
+.college-continue {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+}
+
+.college-continue-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 48px;
+  background: var(--accent, #2D2D2D);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.college-continue-btn:hover {
+  background: var(--accent-hover, #1A1A1A);
+  box-shadow: var(--shadow-lg, 0 8px 40px rgba(0, 0, 0, 0.08));
+  transform: translateY(-1px);
+}
+
+.college-continue-btn:active {
+  transform: scale(0.98);
+}
+
+.college-continue-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
+/* ── No Results ─────────────────────────────────────────────── */
+.college-no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted, #8A8A8A);
+}
+
+.college-no-results p {
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+
+/* ── Back Link ──────────────────────────────────────────────── */
+.college-back {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted, #8A8A8A);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+  z-index: 10;
+}
+
+.college-back:hover {
+  color: var(--text-primary, #1A1A1A);
+}
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .college-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .college-page {
+    padding: 60px 16px 40px;
+  }
+
+  .college-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .college-header p {
+    font-size: 0.95rem;
+  }
+
+  .college-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: 400px;
+  }
+
+  .college-card {
+    padding: 24px 20px;
+  }
+
+  .college-search {
+    margin-bottom: 36px;
+  }
+}

@@ -1,0 +1,346 @@
+/* ============================================================
+   TownHall — Home Feed Page
+   ============================================================ */
+
+/* ── Create Post Card ────────────────────────────────────────── */
+.create-post-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: var(--transition);
+}
+
+.create-post-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.create-post-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.create-post-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.create-post-input-trigger {
+  flex: 1;
+  height: 42px;
+  padding: 0 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.create-post-input-trigger:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+/* Expanded state */
+.create-post-expanded {
+  margin-top: 12px;
+  animation: fadeIn 0.2s ease;
+}
+
+.create-post-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  resize: vertical;
+  outline: none;
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+
+.create-post-textarea::placeholder {
+  color: var(--text-light);
+}
+
+.create-post-textarea:focus {
+  border-color: var(--border);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.06);
+}
+
+.create-post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.create-post-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.create-post-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.create-post-action-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.create-post-action-btn .action-icon {
+  font-size: 1.1rem;
+}
+
+.create-post-submit {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.create-post-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.create-post-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* ── Feed Post Card ──────────────────────────────────────────── */
+.feed-post {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: var(--transition);
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.feed-post:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.post-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  border: 2px solid var(--border-light);
+}
+
+.post-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-user-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.post-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.post-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-light);
+}
+
+.post-more-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  transition: var(--transition);
+}
+
+.post-more-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.post-content {
+  padding: 12px 20px 0;
+}
+
+.post-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+
+.post-image {
+  margin-top: 12px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  aspect-ratio: 16/10;
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--border-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-light);
+  gap: 4px;
+}
+
+.post-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.post-action-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.post-action-btn.liked {
+  color: #E53E3E;
+}
+
+.post-action-btn.saved {
+  color: var(--accent);
+}
+
+.post-action-btn .action-icon {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.post-action-btn:active .action-icon {
+  transform: scale(1.25);
+}
+
+/* Animation delays for staggered posts */
+.feed-post:nth-child(1) { animation-delay: 0.05s; }
+.feed-post:nth-child(2) { animation-delay: 0.1s; }
+.feed-post:nth-child(3) { animation-delay: 0.15s; }
+.feed-post:nth-child(4) { animation-delay: 0.2s; }
+.feed-post:nth-child(5) { animation-delay: 0.25s; }
+.feed-post:nth-child(6) { animation-delay: 0.3s; }
+
+.feed-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.feed-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .create-post-card {
+    padding: 16px;
+  }
+
+  .post-header {
+    padding: 14px 16px 0;
+  }
+
+  .post-content {
+    padding: 10px 16px 0;
+  }
+
+  .post-actions {
+    padding: 6px 8px;
+  }
+
+  .create-post-action-btn span:not(.action-icon) {
+    display: none;
+  }
+
+  .post-action-btn span:not(.action-icon):not(:empty) {
+    font-size: 0.8rem;
+  }
+}
