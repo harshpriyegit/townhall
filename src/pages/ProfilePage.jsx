@@ -506,6 +506,19 @@ function ProfilePage() {
           {isEditing ? (
             <div className="profile-edit-form">
               <div className="profile-edit-field">
+                <label className="profile-edit-label">Profile Picture (DP)</label>
+                <button
+                  type="button"
+                  className="profile-edit-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: 'fit-content', padding: '8px 16px', marginBottom: '16px' }}
+                >
+                  <span>📷</span>
+                  <span>{isUploading ? 'Uploading DP...' : 'Add DP / Change Photo'}</span>
+                </button>
+              </div>
+
+              <div className="profile-edit-field">
                 <label className="profile-edit-label">Full Name</label>
                 <input
                   className="profile-edit-input"
