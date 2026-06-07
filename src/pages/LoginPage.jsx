@@ -22,16 +22,22 @@ function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    login({
-      email,
-      username: email.split('@')[0],
-      fullName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-      college: collegeSlug || 'vit',
-    })
-    navigate('/app')
+    setError('')
+    setIsLoading(true)
+
+    try {
+      await login({ email, password })
+      navigate('/app')
+    } catch (err) {
+      setError(err.message || 'Invalid credentials. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -67,6 +73,21 @@ function LoginPage() {
             <h2>Login</h2>
             <p>Enter your credentials to continue</p>
 
+            {error && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '0.9rem',
+                marginBottom: '20px',
+                lineHeight: 1.4,
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="login-email">Email</label>
               <input
@@ -77,6 +98,7 @@ function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                disabled={isLoading}
               />
             </div>
 
@@ -90,6 +112,7 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                disabled={isLoading}
               />
             </div>
 
@@ -107,8 +130,12 @@ function LoginPage() {
               </button>
             </div>
 
-            <button type="submit" className="auth-submit-btn">
-              Login
+            <button
+              type="submit"
+              className={`auth-submit-btn${isLoading ? ' loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
 
             <div className="auth-divider">

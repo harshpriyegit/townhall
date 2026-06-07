@@ -44,29 +44,41 @@ function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [agreeTerms, setAgreeTerms] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const strength = useMemo(() => getPasswordStrength(password), [password])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
 
     if (password !== confirmPassword) {
-      alert('Passwords do not match.')
+      setError('Passwords do not match.')
       return
     }
 
     if (!agreeTerms) {
-      alert('Please agree to the Terms of Service.')
+      setError('Please agree to the Terms of Service.')
       return
     }
 
-    signup({
-      fullName,
-      email,
-      username,
-      college: collegeSlug || 'vit',
-    })
-    navigate('/app')
+    setIsLoading(true)
+
+    try {
+      await signup({
+        fullName,
+        email,
+        username,
+        password,
+        collegeSlug: collegeSlug || 'vit',
+      })
+      navigate('/app')
+    } catch (err) {
+      setError(err.message || 'Signup failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -102,6 +114,21 @@ function SignupPage() {
             <h2>Create Account</h2>
             <p>Fill in your details to get started</p>
 
+            {error && (
+              <div style={{
+                padding: '12px 16px',
+                background: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: '8px',
+                color: '#DC2626',
+                fontSize: '0.9rem',
+                marginBottom: '20px',
+                lineHeight: 1.4,
+              }}>
+                {error}
+              </div>
+            )}
+
             {/* Full Name */}
             <div className="form-group">
               <label htmlFor="signup-name">Full Name</label>
@@ -113,6 +140,7 @@ function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 autoComplete="name"
+                disabled={isLoading}
               />
             </div>
 
@@ -127,6 +155,7 @@ function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                disabled={isLoading}
               />
             </div>
 
@@ -153,6 +182,7 @@ function SignupPage() {
                   required
                   autoComplete="username"
                   style={{ paddingLeft: '36px' }}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -168,6 +198,7 @@ function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
+                disabled={isLoading}
               />
               {password && (
                 <div className="password-strength">
@@ -197,6 +228,7 @@ function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
+                disabled={isLoading}
               />
             </div>
 
@@ -215,8 +247,12 @@ function SignupPage() {
               </span>
             </label>
 
-            <button type="submit" className="auth-submit-btn">
-              Create Account
+            <button
+              type="submit"
+              className={`auth-submit-btn${isLoading ? ' loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
 
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '24px' }}>

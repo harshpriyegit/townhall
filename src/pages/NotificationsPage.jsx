@@ -1,9 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { notificationsAPI } from '../utils/api'
 import '../styles/notifications.css'
 
 function getInitials(name) {
   if (!name) return '?'
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'Just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH}h ago`
+  const diffD = Math.floor(diffH / 24)
+  if (diffD < 7) return `${diffD}d ago`
+  return date.toLocaleDateString()
+}
+
+const ICON_MAP = {
+  like: '❤️',
+  comment: '💬',
+  follow: '👤',
+  mention: '@',
+  event: '🎉',
 }
 
 const MOCK_NOTIFICATIONS = [
@@ -101,11 +125,75 @@ const MOCK_NOTIFICATIONS = [
 
 function NotificationsPage() {
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
+  const [isLoading, setIsLoading] = useState(true)
+  const [markingRead, setMarkingRead] = useState(false)
 
   const unreadCount = notifications.filter((n) => n.unread).length
 
-  const markAllRead = () => {
+  // Fetch notifications from API on mount
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchNotifications() {
+      try {
+        const data = await notificationsAPI.getAll()
+        if (cancelled) return
+        const apiNotifs = (data.notifications || data || []).map((n) => ({
+          id: n._id || n.id,
+          type: n.type || 'like',
+          icon: ICON_MAP[n.type] || '🔔',
+          user: n.sender?.fullName || n.user || 'Someone',
+          text: n.message || n.text || `<strong>${n.sender?.fullName || 'Someone'}</strong> interacted with your content`,
+          time: timeAgo(n.createdAt) || n.time || '',
+          unread: !n.read,
+        }))
+        setNotifications(apiNotifs.length > 0 ? apiNotifs : MOCK_NOTIFICATIONS)
+      } catch (err) {
+        console.warn('Failed to fetch notifications, using mock data:', err.message)
+        setNotifications(MOCK_NOTIFICATIONS)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    fetchNotifications()
+    return () => { cancelled = true }
+  }, [])
+
+  const markAllRead = async () => {
+    setMarkingRead(true)
+    // Optimistic
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
+
+    try {
+      await notificationsAPI.markAllRead()
+    } catch (err) {
+      console.warn('Mark all read API failed:', err.message)
+      // Already looks fine locally, no revert needed for UX
+    } finally {
+      setMarkingRead(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="notifications-page">
+        <div className="notifications-header">
+          <h1 className="notifications-title">Notifications</h1>
+        </div>
+        <div className="notifications-list">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="notification-item" style={{ opacity: 0.5 }}>
+              <div className="notification-avatar" style={{ background: '#F0F0F0', color: 'transparent' }}>??</div>
+              <div className="notification-body">
+                <div style={{ width: '80%', height: '14px', background: '#F0F0F0', borderRadius: '4px', marginBottom: '6px' }} />
+                <div style={{ width: '60px', height: '12px', background: '#F5F5F5', borderRadius: '4px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -115,8 +203,12 @@ function NotificationsPage() {
           Notifications {unreadCount > 0 && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 400 }}>({unreadCount} new)</span>}
         </h1>
         {unreadCount > 0 && (
-          <button className="notifications-mark-read" onClick={markAllRead}>
-            Mark all as read
+          <button
+            className="notifications-mark-read"
+            onClick={markAllRead}
+            disabled={markingRead}
+          >
+            {markingRead ? 'Marking...' : 'Mark all as read'}
           </button>
         )}
       </div>

@@ -1,58 +1,72 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { authAPI } from '../utils/api'
 
 const AuthContext = createContext(null)
 
-const STORAGE_KEY = 'townhall_user'
+const TOKEN_KEY = 'townhall_token'
+const USER_KEY = 'townhall_user'
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
+      const stored = localStorage.getItem(USER_KEY)
       return stored ? JSON.parse(stored) : null
     } catch {
       return null
     }
   })
+  const [loading, setLoading] = useState(true)
 
   const isAuthenticated = !!currentUser
 
-  const login = useCallback((userData) => {
-    const user = {
-      id: userData.id || '1',
-      fullName: userData.fullName || userData.email?.split('@')[0] || 'User',
-      email: userData.email,
-      username: userData.username || userData.email?.split('@')[0] || 'user',
-      avatar: userData.avatar || null,
-      college: userData.college || 'vit',
-      bio: userData.bio || '',
-      followers: userData.followers ?? 42,
-      following: userData.following ?? 28,
+  // Verify token on mount
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      setLoading(false)
+      return
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+
+    authAPI.me()
+      .then((data) => {
+        const user = data.user || data
+        localStorage.setItem(USER_KEY, JSON.stringify(user))
+        setCurrentUser(user)
+      })
+      .catch(() => {
+        // Token invalid — clear everything
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
+        setCurrentUser(null)
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const login = useCallback(async ({ email, password }) => {
+    const data = await authAPI.login({ email, password })
+    const token = data.token
+    const user = data.user || data
+
+    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
     setCurrentUser(user)
     return user
   }, [])
 
-  const signup = useCallback((userData) => {
-    const user = {
-      id: '1',
-      fullName: userData.fullName,
-      email: userData.email,
-      username: userData.username,
-      avatar: null,
-      college: userData.college || 'vit',
-      bio: '',
-      followers: 42,
-      following: 28,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+  const signup = useCallback(async ({ fullName, email, username, password, collegeSlug }) => {
+    const data = await authAPI.signup({ fullName, email, username, password, collegeSlug })
+    const token = data.token
+    const user = data.user || data
+
+    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
     setCurrentUser(user)
     return user
   }, [])
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
     localStorage.removeItem('townhall_posts')
     setCurrentUser(null)
   }, [])
@@ -61,10 +75,32 @@ export function AuthProvider({ children }) {
     setCurrentUser((prev) => {
       if (!prev) return prev
       const updated = { ...prev, ...updates }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      localStorage.setItem(USER_KEY, JSON.stringify(updated))
       return updated
     })
   }, [])
+
+  // Show nothing while verifying token on first load
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#FFFFFF',
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          border: '3px solid #F0F0F0',
+          borderTopColor: '#2D2D2D',
+          borderRadius: '50%',
+          animation: 'spin 0.6s linear infinite',
+        }} />
+      </div>
+    )
+  }
 
   return (
     <AuthContext.Provider value={{ currentUser, isAuthenticated, login, signup, logout, updateUser }}>

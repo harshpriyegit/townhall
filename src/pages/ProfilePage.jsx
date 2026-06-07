@@ -1,11 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { usersAPI } from '../utils/api'
 import '../styles/profile.css'
 
 function getInitials(name) {
   if (!name) return '?'
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'Just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH}h ago`
+  const diffD = Math.floor(diffH / 24)
+  if (diffD < 7) return `${diffD}d ago`
+  return date.toLocaleDateString()
 }
 
 const MOCK_USER_POSTS = [
@@ -37,22 +53,136 @@ function ProfilePage() {
   const { currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState('posts')
   const [isFollowing, setIsFollowing] = useState(false)
+  const [profileUser, setProfileUser] = useState(null)
+  const [posts, setPosts] = useState(MOCK_USER_POSTS)
+  const [isLoading, setIsLoading] = useState(true)
+  const [followLoading, setFollowLoading] = useState(false)
 
   const isOwnProfile = !paramUsername || paramUsername === currentUser?.username
 
-  const profileUser = isOwnProfile
-    ? currentUser
-    : {
-        fullName: paramUsername?.charAt(0).toUpperCase() + paramUsername?.slice(1) || 'User',
-        username: paramUsername || 'user',
-        bio: 'Hey there! I\'m using TownHall.',
-        followers: 128,
-        following: 95,
-        avatar: null,
-      }
+  useEffect(() => {
+    let cancelled = false
 
-  const posts = MOCK_USER_POSTS
-  const postsCount = posts.length
+    async function fetchProfile() {
+      setIsLoading(true)
+      try {
+        let data
+        if (isOwnProfile) {
+          data = await usersAPI.getMe()
+        } else {
+          data = await usersAPI.getByUsername(paramUsername)
+        }
+        if (cancelled) return
+
+        const user = data.user || data
+        setProfileUser({
+          _id: user._id || user.id,
+          fullName: user.fullName || user.username,
+          username: user.username,
+          bio: user.bio || '',
+          avatar: user.avatar || user.profilePicture || null,
+          followers: user.followersCount ?? user.followers ?? 0,
+          following: user.followingCount ?? user.following ?? 0,
+          postsCount: user.postsCount ?? 0,
+        })
+        setIsFollowing(user.isFollowing || false)
+
+        // If user has posts from API
+        if (user.posts && user.posts.length > 0) {
+          setPosts(user.posts.map((p) => ({
+            id: p._id || p.id,
+            text: p.content || p.text || '',
+            timestamp: timeAgo(p.createdAt) || p.timestamp || '',
+            likes: p.likesCount ?? p.likes ?? 0,
+            comments: p.commentsCount ?? p.comments ?? 0,
+          })))
+        }
+      } catch (err) {
+        console.warn('Failed to fetch profile, using local data:', err.message)
+        if (cancelled) return
+        // Fallback to local user data
+        if (isOwnProfile && currentUser) {
+          setProfileUser(currentUser)
+        } else {
+          setProfileUser({
+            fullName: paramUsername?.charAt(0).toUpperCase() + paramUsername?.slice(1) || 'User',
+            username: paramUsername || 'user',
+            bio: 'Hey there! I\'m using TownHall.',
+            followers: 128,
+            following: 95,
+            avatar: null,
+          })
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    fetchProfile()
+    return () => { cancelled = true }
+  }, [paramUsername, isOwnProfile, currentUser])
+
+  const handleFollow = async () => {
+    if (!profileUser?._id) {
+      setIsFollowing(!isFollowing)
+      return
+    }
+
+    setFollowLoading(true)
+    const prevState = isFollowing
+
+    // Optimistic
+    setIsFollowing(!prevState)
+    setProfileUser((prev) => prev ? {
+      ...prev,
+      followers: prevState ? (prev.followers || 1) - 1 : (prev.followers || 0) + 1,
+    } : prev)
+
+    try {
+      await usersAPI.follow(profileUser._id)
+    } catch (err) {
+      console.warn('Follow API failed:', err.message)
+      setIsFollowing(prevState)
+      setProfileUser((prev) => prev ? {
+        ...prev,
+        followers: prevState ? (prev.followers || 0) + 1 : (prev.followers || 1) - 1,
+      } : prev)
+    } finally {
+      setFollowLoading(false)
+    }
+  }
+
+  const postsCount = profileUser?.postsCount ?? posts.length
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="profile-page">
+        <div className="profile-header-card">
+          <div className="profile-cover" />
+          <div className="profile-header-body">
+            <div className="profile-avatar-wrapper">
+              <div className="profile-avatar" style={{ background: '#F0F0F0', color: 'transparent' }}>??</div>
+            </div>
+            <div className="profile-info">
+              <div>
+                <div style={{ width: '160px', height: '22px', background: '#F0F0F0', borderRadius: '6px', marginBottom: '8px' }} />
+                <div style={{ width: '100px', height: '16px', background: '#F5F5F5', borderRadius: '4px' }} />
+              </div>
+            </div>
+            <div className="profile-stats">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="profile-stat">
+                  <div style={{ width: '30px', height: '18px', background: '#F0F0F0', borderRadius: '4px', margin: '0 auto 4px' }} />
+                  <div style={{ width: '50px', height: '12px', background: '#F5F5F5', borderRadius: '4px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="profile-page">
@@ -87,7 +217,8 @@ function ProfilePage() {
               ) : (
                 <button
                   className={`profile-follow-btn${isFollowing ? ' following' : ''}`}
-                  onClick={() => setIsFollowing(!isFollowing)}
+                  onClick={handleFollow}
+                  disabled={followLoading}
                 >
                   {isFollowing ? 'Following' : 'Follow'}
                 </button>

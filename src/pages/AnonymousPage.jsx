@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { anonymousAPI } from '../utils/api';
 import '../styles/anonymous.css';
 
 const MOCK_POSTS = [
@@ -21,27 +22,90 @@ const VOICE_ROOMS = [
 
 const REACTION_EMOJIS = ['👍', '👎', '😂', '😮'];
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD}d ago`;
+  return date.toLocaleDateString();
+}
+
 export default function AnonymousPage() {
   const [postText, setPostText] = useState('');
   const [posts, setPosts] = useState(MOCK_POSTS);
   const [activeReactions, setActiveReactions] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPosting, setIsPosting] = useState(false);
 
-  const handlePost = () => {
+  // Fetch anonymous posts from API
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPosts() {
+      try {
+        const data = await anonymousAPI.getAll();
+        if (cancelled) return;
+        const apiPosts = (data.posts || data || []).map((p) => ({
+          id: p._id || p.id,
+          text: p.content || p.text || '',
+          time: timeAgo(p.createdAt) || p.time || '',
+          reactions: p.reactions || { '👍': 0, '👎': 0, '😂': 0, '😮': 0 },
+        }));
+        setPosts(apiPosts.length > 0 ? apiPosts : MOCK_POSTS);
+      } catch (err) {
+        console.warn('Failed to fetch anonymous posts, using mock data:', err.message);
+        setPosts(MOCK_POSTS);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchPosts();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handlePost = async () => {
     if (!postText.trim()) return;
-    const newId = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const newPost = {
-      id: newId,
-      text: postText,
-      time: 'Just now',
-      reactions: { '👍': 0, '👎': 0, '😂': 0, '😮': 0 },
-    };
-    setPosts([newPost, ...posts]);
-    setPostText('');
+    setIsPosting(true);
+
+    try {
+      const data = await anonymousAPI.create(postText.trim());
+      const newPost = {
+        id: data.post?._id || data._id || Math.random().toString(36).substring(2, 6).toUpperCase(),
+        text: postText.trim(),
+        time: 'Just now',
+        reactions: { '👍': 0, '👎': 0, '😂': 0, '😮': 0 },
+      };
+      setPosts([newPost, ...posts]);
+      setPostText('');
+    } catch (err) {
+      console.warn('Failed to create anonymous post via API, saving locally:', err.message);
+      const newId = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const newPost = {
+        id: newId,
+        text: postText.trim(),
+        time: 'Just now',
+        reactions: { '👍': 0, '👎': 0, '😂': 0, '😮': 0 },
+      };
+      setPosts([newPost, ...posts]);
+      setPostText('');
+    } finally {
+      setIsPosting(false);
+    }
   };
 
-  const toggleReaction = (postId, emoji) => {
+  const toggleReaction = async (postId, emoji) => {
     const key = `${postId}-${emoji}`;
     const isActive = activeReactions[key];
+
+    // Optimistic update
     setActiveReactions(prev => ({ ...prev, [key]: !isActive }));
     setPosts(prev =>
       prev.map(p =>
@@ -50,12 +114,33 @@ export default function AnonymousPage() {
               ...p,
               reactions: {
                 ...p.reactions,
-                [emoji]: p.reactions[emoji] + (isActive ? -1 : 1),
+                [emoji]: (p.reactions[emoji] || 0) + (isActive ? -1 : 1),
               },
             }
           : p
       )
     );
+
+    try {
+      await anonymousAPI.react(postId, emoji);
+    } catch (err) {
+      console.warn('Reaction API failed:', err.message);
+      // Revert on failure
+      setActiveReactions(prev => ({ ...prev, [key]: isActive }));
+      setPosts(prev =>
+        prev.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                reactions: {
+                  ...p.reactions,
+                  [emoji]: (p.reactions[emoji] || 0) + (isActive ? 1 : -1),
+                },
+              }
+            : p
+        )
+      );
+    }
   };
 
   return (
@@ -80,44 +165,65 @@ export default function AnonymousPage() {
                 onChange={e => setPostText(e.target.value)}
                 placeholder="Share something anonymously..."
                 maxLength={500}
+                disabled={isPosting}
               />
               <div className="anon-compose-actions">
-                <button className="anon-post-btn" onClick={handlePost} disabled={!postText.trim()}>
-                  Post Anonymously
+                <button
+                  className="anon-post-btn"
+                  onClick={handlePost}
+                  disabled={!postText.trim() || isPosting}
+                >
+                  {isPosting ? 'Posting...' : 'Post Anonymously'}
                 </button>
               </div>
             </div>
 
             {/* Feed */}
             <div className="anon-feed">
-              {posts.map(post => (
-                <article key={post.id} className="anon-post-card">
-                  <div className="anon-post-header">
-                    <div className="anon-avatar">👤</div>
-                    <div className="anon-post-meta">
-                      <div className="anon-post-name">
-                        Anonymous
-                        <span className="anon-post-id">#{post.id}</span>
+              {isLoading ? (
+                [1, 2, 3].map((i) => (
+                  <article key={i} className="anon-post-card" style={{ opacity: 0.5 }}>
+                    <div className="anon-post-header">
+                      <div className="anon-avatar" style={{ background: '#F0F0F0' }}>👤</div>
+                      <div className="anon-post-meta">
+                        <div style={{ width: '120px', height: '14px', background: '#F0F0F0', borderRadius: '4px', marginBottom: '4px' }} />
+                        <div style={{ width: '60px', height: '12px', background: '#F5F5F5', borderRadius: '4px' }} />
                       </div>
-                      <div className="anon-post-time">{post.time}</div>
                     </div>
-                  </div>
-                  <p className="anon-post-body">{post.text}</p>
-                  <div className="anon-reactions">
-                    {REACTION_EMOJIS.map(emoji => (
-                      <button
-                        key={emoji}
-                        className={`anon-reaction-btn ${activeReactions[`${post.id}-${emoji}`] ? 'active' : ''}`}
-                        onClick={() => toggleReaction(post.id, emoji)}
-                      >
-                        <span>{emoji}</span>
-                        <span className="anon-reaction-count">{post.reactions[emoji]}</span>
-                      </button>
-                    ))}
-                    <button className="anon-report-btn">⚑ Report</button>
-                  </div>
-                </article>
-              ))}
+                    <div style={{ width: '100%', height: '14px', background: '#F5F5F5', borderRadius: '4px', marginBottom: '8px' }} />
+                    <div style={{ width: '70%', height: '14px', background: '#F5F5F5', borderRadius: '4px' }} />
+                  </article>
+                ))
+              ) : (
+                posts.map(post => (
+                  <article key={post.id} className="anon-post-card">
+                    <div className="anon-post-header">
+                      <div className="anon-avatar">👤</div>
+                      <div className="anon-post-meta">
+                        <div className="anon-post-name">
+                          Anonymous
+                          <span className="anon-post-id">#{typeof post.id === 'string' ? post.id.slice(-4).toUpperCase() : post.id}</span>
+                        </div>
+                        <div className="anon-post-time">{post.time}</div>
+                      </div>
+                    </div>
+                    <p className="anon-post-body">{post.text}</p>
+                    <div className="anon-reactions">
+                      {REACTION_EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          className={`anon-reaction-btn ${activeReactions[`${post.id}-${emoji}`] ? 'active' : ''}`}
+                          onClick={() => toggleReaction(post.id, emoji)}
+                        >
+                          <span>{emoji}</span>
+                          <span className="anon-reaction-count">{post.reactions?.[emoji] || 0}</span>
+                        </button>
+                      ))}
+                      <button className="anon-report-btn">⚑ Report</button>
+                    </div>
+                  </article>
+                ))
+              )}
             </div>
           </main>
 

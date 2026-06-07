@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model College {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  domain    String
+  logo      String?
+  isActive  Boolean  @default(false)
+  users     User[]
+  events    Event[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id            String    @id @default(uuid())
+  fullName      String
+  username      String    @unique
+  email         String    @unique
+  passwordHash  String
+  avatar        String?
+  bio           String?   @default("")
+  collegeId     String
+  college       College   @relation(fields: [collegeId], references: [id])
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  posts              Post[]
+  comments           Comment[]
+  likes              Like[]
+  sentMessages       Message[]       @relation("SentMessages")
+  receivedMessages   Message[]       @relation("ReceivedMessages")
+  followers          Follow[]        @relation("Following")
+  following          Follow[]        @relation("Followers")
+  notifications      Notification[]  @relation("NotificationReceiver")
+  notificationsSent  Notification[]  @relation("NotificationSender")
+  anonymousPosts     AnonymousPost[]
+  datingProfile      DatingProfile?
+  swipesSent         DatingSwipe[]   @relation("SwipeSender")
+  swipesReceived     DatingSwipe[]   @relation("SwipeReceiver")
+  eventRsvps         EventRSVP[]
+  cuffRequestsSent     CuffRequest[] @relation("CuffSender")
+  cuffRequestsReceived CuffRequest[] @relation("CuffReceiver")
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  content   String
+  imageUrl  String?
+  videoUrl  String?
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     Like[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  type       String
+  content    String
+  read       Boolean  @default(false)
+  receiverId String
+  receiver   User     @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  senderId   String?
+  sender     User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+}
+
+model AnonymousPost {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  anonTag   String
+  reactions Json     @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model DatingProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age        Int?
+  branch     String?
+  bio        String?
+  interests  String[]
+  lookingFor String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model DatingSwipe {
+  id        String   @id @default(uuid())
+  swiperId  String
+  swiper    User     @relation("SwipeSender", fields: [swiperId], references: [id], onDelete: Cascade)
+  swipedId  String
+  swiped    User     @relation("SwipeReceiver", fields: [swipedId], references: [id], onDelete: Cascade)
+  action    String
+  createdAt DateTime @default(now())
+
+  @@unique([swiperId, swipedId])
+}
+
+model Event {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  date         DateTime
+  venue        String
+  bannerUrl    String?
+  collegeId    String
+  college      College       @relation(fields: [collegeId], references: [id])
+  rsvps        EventRSVP[]
+  cuffRequests CuffRequest[]
+  createdAt    DateTime      @default(now())
+}
+
+model EventRSVP {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model CuffRequest {
+  id         String   @id @default(uuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User     @relation("CuffSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("CuffReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  @@unique([eventId, senderId, receiverId])
+}
