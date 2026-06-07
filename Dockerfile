@@ -25,6 +25,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install OpenSSL for Prisma's musl binaries (libssl.so.1.1)
+RUN apk add --no-cache openssl
+
 # Copy server package configuration and install production dependencies
 COPY server/package*.json ./server/
 RUN cd server && npm install --omit=dev
