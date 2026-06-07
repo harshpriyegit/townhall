@@ -1,0 +1,11 @@
+node_modules
+dist
+server/node_modules
+server/uploads
+.git
+.github
+.env
+CVS
+.svn
+.hg
+.gitimport
