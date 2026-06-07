@@ -423,3 +423,258 @@
     font-size: 1rem;
   }
 }
+
+/* ── Dating Profile Prompt & Locked state ── */
+.dating-profile-prompt {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 400px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  gap: 16px;
+  animation: fadeIn 0.4s ease;
+}
+
+.dating-prompt-icon {
+  font-size: 3.5rem;
+  animation: heartbeat 1.5s infinite;
+}
+
+.dating-profile-prompt h3 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dating-profile-prompt p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.dating-setup-action-btn {
+  padding: 12px 32px;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.dating-setup-action-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Modal Styles ── */
+.dating-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease;
+}
+
+.dating-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
+  width: 90%;
+  max-width: 460px;
+  padding: 28px;
+  animation: slideInUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dating-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dating-modal-header h2 {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dating-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.dating-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.dating-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dating-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dating-form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dating-form-group input,
+.dating-form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.dating-form-group input:focus,
+.dating-form-group textarea:focus {
+  border-color: var(--accent);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.05);
+}
+
+.dating-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dating-btn-cancel {
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dating-btn-cancel:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+.dating-btn-submit {
+  padding: 10px 24px;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dating-btn-submit:hover {
+  background: var(--accent-hover);
+}
+
+.dating-setup-profile-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.dating-setup-profile-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.dating-profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+}
+
+.dating-profile-detail-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 6px;
+}
+
+.dating-profile-detail-row span:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.dating-profile-detail-row span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
