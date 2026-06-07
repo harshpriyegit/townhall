@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { setupSocket } from './socket/index.js';
 
 // Load environment variables
@@ -46,8 +47,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Serve static frontend files from 'dist' if it exists
+const distPath = path.join(__dirname, '../../dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
+
 // Health check
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     message: 'TownHall API',
@@ -65,6 +72,16 @@ app.use('/api/dating', datingRoutes);
 app.use('/api/cuffing', cuffingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// Wildcard route to serve React frontend SPA (must be after /api routes)
+if (fs.existsSync(distPath)) {
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
