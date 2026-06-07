@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 
-const ACCESS_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const ACCESS_SECRET = process.env.JWT_SECRET || 'townhall_super_secret_jwt_key_2026';
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'townhall_refresh_secret_key_2026';
+
 
 export function generateAccessToken(user) {
   return jwt.sign(
