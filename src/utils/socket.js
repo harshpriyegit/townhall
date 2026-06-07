@@ -3,10 +3,7 @@ import { io } from 'socket.io-client'
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000'
-    : (window.location.hostname.includes('onrender.com')
-        ? 'https://townhall-i390.onrender.com'
-        : window.location.origin
-      )
+    : window.location.origin
 )
 
 let socket = null
