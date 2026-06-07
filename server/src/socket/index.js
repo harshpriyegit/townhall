@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { setupChatSocket } from './chat.js';
 import { setupVoiceSocket } from './voice.js';
 import { setupVideoSocket } from './video.js';
+import { setupRadarSocket } from './radar.js';
 
 export function setupSocket(server) {
   const io = new Server(server, {
@@ -28,6 +29,7 @@ export function setupSocket(server) {
     setupChatSocket(io, socket, onlineUsers);
     setupVoiceSocket(io, socket, onlineUsers);
     setupVideoSocket(io, socket, onlineUsers);
+    setupRadarSocket(io, socket, onlineUsers);
 
     socket.on('disconnect', () => {
       // Find and remove user
