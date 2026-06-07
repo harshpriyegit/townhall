@@ -2,17 +2,6 @@ import { useState, useEffect } from 'react';
 import { anonymousAPI } from '../utils/api';
 import '../styles/anonymous.css';
 
-const MOCK_POSTS = [
-  { id: 'A7K2', text: 'Just had the best chai at V3 canteen. If you know, you know. ☕', time: '2m ago', reactions: { '👍': 12, '👎': 1, '😂': 4, '😮': 0 } },
-  { id: 'B3M9', text: 'To the person who returned my laptop charger in the library — you literally saved my assignment. Thank you, stranger!', time: '8m ago', reactions: { '👍': 34, '👎': 0, '😂': 2, '😮': 5 } },
-  { id: 'C1P5', text: 'Hot take: 8 AM classes should be illegal. I said what I said.', time: '15m ago', reactions: { '👍': 67, '👎': 3, '😂': 45, '😮': 1 } },
-  { id: 'D9X4', text: 'The WiFi in hostel block C has been down for 3 days. Admin, if you\'re reading this... PLEASE FIX IT.', time: '22m ago', reactions: { '👍': 89, '👎': 0, '😂': 12, '😮': 3 } },
-  { id: 'E6W1', text: 'Saw two cats fighting near the academic block. Highlight of my day honestly.', time: '35m ago', reactions: { '👍': 28, '👎': 2, '😂': 56, '😮': 8 } },
-  { id: 'F2K8', text: 'Just finished my last exam this semester. The freedom feels UNREAL. 🎉', time: '1h ago', reactions: { '👍': 102, '👎': 0, '😂': 15, '😮': 2 } },
-  { id: 'G5N3', text: 'Confession: I\'ve been going to the wrong class for 2 weeks and only realized today when the professor called attendance.', time: '2h ago', reactions: { '👍': 5, '👎': 1, '😂': 134, '😮': 45 } },
-  { id: 'H8R6', text: 'The sunset from the rooftop of TT today was absolutely breathtaking. Sometimes this campus really surprises you. 🌅', time: '3h ago', reactions: { '👍': 76, '👎': 0, '😂': 3, '😮': 22 } },
-];
-
 const VOICE_ROOMS = [
   { id: 1, name: 'Late Night Talks', listeners: 12, topic: 'chill' },
   { id: 2, name: 'Confessions', listeners: 27, topic: 'confessions' },
@@ -39,7 +28,7 @@ function timeAgo(dateStr) {
 
 export default function AnonymousPage() {
   const [postText, setPostText] = useState('');
-  const [posts, setPosts] = useState(MOCK_POSTS);
+  const [posts, setPosts] = useState([]);
   const [activeReactions, setActiveReactions] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
@@ -58,10 +47,10 @@ export default function AnonymousPage() {
           time: timeAgo(p.createdAt) || p.time || '',
           reactions: p.reactions || { '👍': 0, '👎': 0, '😂': 0, '😮': 0 },
         }));
-        setPosts(apiPosts.length > 0 ? apiPosts : MOCK_POSTS);
+        setPosts(apiPosts);
       } catch (err) {
-        console.warn('Failed to fetch anonymous posts, using mock data:', err.message);
-        setPosts(MOCK_POSTS);
+        console.warn('Failed to fetch anonymous posts, showing empty wall:', err.message);
+        setPosts([]);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
