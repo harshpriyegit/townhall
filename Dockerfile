@@ -1,5 +1,8 @@
 # Base image for building the application
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
+
+# Install OpenSSL (required by Prisma query engine)
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -21,7 +24,10 @@ RUN cd server && npx prisma generate
 RUN npx vite build
 
 # Production image
-FROM node:20-alpine
+FROM node:20-slim
+
+# Install OpenSSL for runtime
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
