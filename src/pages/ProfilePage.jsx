@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { usersAPI, uploadAPI } from '../utils/api'
+import { usersAPI, uploadAPI, postsAPI } from '../utils/api'
 import '../styles/profile.css'
+import '../styles/home.css'
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000'
@@ -29,7 +30,7 @@ function timeAgo(dateStr) {
   return date.toLocaleDateString()
 }
 
-function resolveAvatarUrl(avatar) {
+function resolveUrl(avatar) {
   if (!avatar) return null
   if (avatar.startsWith('http')) return avatar
   return `${API_BASE}${avatar}`
@@ -58,6 +59,20 @@ function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState('')
   const fileInputRef = useRef(null)
+
+  // Create Post state (for Profile Page)
+  const [postExpanded, setPostExpanded] = useState(false)
+  const [postText, setPostText] = useState('')
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [selectedVideo, setSelectedVideo] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
+  const [uploadError, setUploadError] = useState('')
+  const [isPosting, setIsPosting] = useState(false)
+  const [feedState, setFeedState] = useState({})
+
+  const imageInputRef = useRef(null)
+  const videoInputRef = useRef(null)
 
   const isOwnProfile = !paramUsername || paramUsername === currentUser?.username
 
@@ -90,13 +105,23 @@ function ProfilePage() {
 
         // If user has posts from API
         if (user.posts && user.posts.length > 0) {
-          setPosts(user.posts.map((p) => ({
+          const apiPosts = user.posts.map((p) => ({
             id: p._id || p.id,
             text: p.content || p.text || '',
+            image: p.imageUrl || p.image || null,
+            video: p.videoUrl || p.video || null,
             timestamp: timeAgo(p.createdAt) || p.timestamp || '',
             likes: p.likesCount ?? p.likes ?? 0,
             comments: p.commentsCount ?? p.comments ?? 0,
-          })))
+            liked: p.liked || false,
+          }))
+          setPosts(apiPosts)
+
+          const state = {}
+          apiPosts.forEach((p) => {
+            state[p.id] = { liked: p.liked, saved: false, likes: p.likes }
+          })
+          setFeedState(state)
         }
       } catch (err) {
         console.warn('Failed to fetch profile, using local data:', err.message)
@@ -220,6 +245,148 @@ function ProfilePage() {
     }
   }
 
+  // Create Post Handlers for Profile Page
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setSelectedImage(file)
+    setSelectedVideo(null)
+    setVideoPreview(null)
+    setImagePreview(URL.createObjectURL(file))
+    setUploadError('')
+  }
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Enforce 10-second limit client-side
+    const videoEl = document.createElement('video')
+    videoEl.preload = 'metadata'
+    videoEl.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoEl.src)
+      if (videoEl.duration > 10.5) {
+        setUploadError('Videos under "Real Time" are strictly limited to 10 seconds!')
+        e.target.value = ''
+        return
+      }
+      setSelectedVideo(file)
+      setSelectedImage(null)
+      setImagePreview(null)
+      setVideoPreview(URL.createObjectURL(file))
+      setUploadError('')
+    }
+    videoEl.src = URL.createObjectURL(file)
+  }
+
+  const removeAttachment = () => {
+    setSelectedImage(null)
+    setSelectedVideo(null)
+    setImagePreview(null)
+    setVideoPreview(null)
+    setUploadError('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (videoInputRef.current) videoInputRef.current.value = ''
+  }
+
+  const handlePost = async () => {
+    if (!postText.trim() && !selectedImage && !selectedVideo) return
+    setIsPosting(true)
+    setUploadError('')
+
+    let imageUrl = null
+    let videoUrl = null
+
+    try {
+      if (selectedImage) {
+        const result = await uploadAPI.postImage(selectedImage)
+        imageUrl = result.imageUrl
+      } else if (selectedVideo) {
+        const result = await uploadAPI.postVideo(selectedVideo)
+        videoUrl = result.videoUrl
+      }
+
+      const data = await postsAPI.create({
+        content: postText.trim(),
+        imageUrl,
+        videoUrl
+      })
+
+      const newPost = {
+        id: data.id || data.post?.id || `user-${Date.now()}`,
+        text: postText.trim(),
+        image: imageUrl,
+        video: videoUrl,
+        timestamp: 'Just now',
+        likes: 0,
+        comments: 0,
+        liked: false,
+      }
+
+      setPosts((prev) => [newPost, ...prev])
+
+      setFeedState((prev) => ({
+        ...prev,
+        [newPost.id]: { liked: false, saved: false, likes: 0 }
+      }))
+
+      setProfileUser((prev) => prev ? { ...prev, postsCount: (prev.postsCount || 0) + 1 } : prev)
+
+      setPostText('')
+      setSelectedImage(null)
+      setSelectedVideo(null)
+      setImagePreview(null)
+      setVideoPreview(null)
+      setPostExpanded(false)
+    } catch (err) {
+      console.error('Failed to create post on profile page:', err)
+      setUploadError(err.message || 'Failed to submit post. Please try again.')
+    } finally {
+      setIsPosting(false)
+    }
+  }
+
+  const toggleLike = useCallback(async (postId) => {
+    setFeedState((prev) => {
+      const current = prev[postId] || { liked: false, saved: false, likes: 0 }
+      return {
+        ...prev,
+        [postId]: {
+          ...current,
+          liked: !current.liked,
+          likes: current.liked ? current.likes - 1 : current.likes + 1,
+        },
+      }
+    })
+
+    try {
+      await postsAPI.like(postId)
+    } catch (err) {
+      console.warn('Like API failed:', err.message)
+      setFeedState((prev) => {
+        const current = prev[postId] || { liked: false, saved: false, likes: 0 }
+        return {
+          ...prev,
+          [postId]: {
+            ...current,
+            liked: !current.liked,
+            likes: current.liked ? current.likes - 1 : current.likes + 1,
+          },
+        }
+      })
+    }
+  }, [])
+
+  const toggleSave = useCallback((postId) => {
+    setFeedState((prev) => {
+      const current = prev[postId] || { liked: false, saved: false, likes: 0 }
+      return {
+        ...prev,
+        [postId]: { ...current, saved: !current.saved },
+      }
+    })
+  }, [])
+
   const handleFollow = async () => {
     if (!profileUser?._id) {
       setIsFollowing(!isFollowing)
@@ -252,7 +419,7 @@ function ProfilePage() {
   const postsCount = profileUser?.postsCount ?? posts.length
 
   // Determine avatar display URL
-  const displayAvatar = editAvatarPreview || resolveAvatarUrl(profileUser?.avatar)
+  const displayAvatar = editAvatarPreview || resolveUrl(profileUser?.avatar)
 
   // Loading skeleton
   if (isLoading) {
@@ -291,12 +458,12 @@ function ProfilePage() {
         <div className="profile-cover" />
         <div className="profile-header-body">
           <div className="profile-avatar-wrapper">
-            {/* Avatar - clickable in edit mode */}
-            {isEditing ? (
+            {/* Avatar - clickable if own profile or in edit mode */}
+            {isEditing || isOwnProfile ? (
               <div
                 className="profile-avatar profile-avatar-edit"
                 onClick={() => fileInputRef.current?.click()}
-                title="Change profile photo"
+                title="Upload/Change profile photo"
               >
                 {isUploading && (
                   <div className="profile-avatar-overlay uploading">
@@ -316,13 +483,6 @@ function ProfilePage() {
                 ) : (
                   getInitials(profileUser?.fullName)
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  onChange={handleAvatarFileChange}
-                  style={{ display: 'none' }}
-                />
               </div>
             ) : (
               <div className="profile-avatar">
@@ -334,6 +494,13 @@ function ProfilePage() {
               </div>
             )}
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleAvatarFileChange}
+            style={{ display: 'none' }}
+          />
 
           {/* ── Info section: View or Edit mode ─── */}
           {isEditing ? (
@@ -412,9 +579,14 @@ function ProfilePage() {
                 )}
               </div>
 
-              <div>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {isOwnProfile ? (
-                  <button className="profile-edit-btn" onClick={handleStartEdit}>Edit Profile</button>
+                  <>
+                    <button className="profile-edit-btn" onClick={handleStartEdit}>Edit Profile</button>
+                    <button className="profile-edit-btn" onClick={() => fileInputRef.current?.click()}>
+                      Upload Photo
+                    </button>
+                  </>
                 ) : (
                   <button
                     className={`profile-follow-btn${isFollowing ? ' following' : ''}`}
@@ -458,49 +630,206 @@ function ProfilePage() {
         ))}
       </div>
 
-      {/* ── Posts ────────────────────────────────────────── */}
-      {activeTab === 'posts' && posts.length > 0 && (
-        <div className="profile-posts">
-          {posts.map((post) => (
-            <article key={post.id} className="feed-post">
-              <div className="post-header">
-                <div className="post-avatar">
-                  {displayAvatar ? (
-                    <img src={displayAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                  ) : (
-                    getInitials(profileUser?.fullName)
-                  )}
+      {/* ── Posts Tab Content ────────────────────────── */}
+      {activeTab === 'posts' && (
+        <div className="profile-posts-tab">
+          {/* Create Post Card (Only for Own Profile) */}
+          {isOwnProfile && (
+            <div className="create-post-card" style={{ marginBottom: '24px' }}>
+              <div className="create-post-top">
+                <div className="create-post-avatar">
+                  {getInitials(currentUser?.fullName)}
                 </div>
-                <div className="post-user-info">
-                  <div className="post-user-name">{profileUser?.fullName}</div>
-                  <div className="post-user-meta">
-                    <span>@{profileUser?.username}</span>
-                    <span className="post-dot" />
-                    <span>{post.timestamp}</span>
+                {!postExpanded ? (
+                  <div
+                    className="create-post-input-trigger"
+                    onClick={() => setPostExpanded(true)}
+                  >
+                    What's on your mind?
+                  </div>
+                ) : (
+                  <div style={{ flex: 1 }} />
+                )}
+              </div>
+
+              {postExpanded && (
+                <div className="create-post-expanded">
+                  <textarea
+                    className="create-post-textarea"
+                    placeholder="What's on your mind?"
+                    value={postText}
+                    onChange={(e) => setPostText(e.target.value)}
+                    autoFocus
+                    disabled={isPosting}
+                  />
+
+                  {/* Preview image or video */}
+                  {(imagePreview || videoPreview) && (
+                    <div style={{ position: 'relative', marginTop: '12px', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
+                      {imagePreview && (
+                        <img src={imagePreview} alt="Preview" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px' }} />
+                      )}
+                      {videoPreview && (
+                        <video src={videoPreview} controls style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#000', borderRadius: '8px' }} />
+                      )}
+                      <button
+                        type="button"
+                        onClick={removeAttachment}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.6)',
+                          color: '#fff',
+                          border: 'none',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <div style={{ marginTop: '10px', color: '#DC2626', fontSize: '0.85rem', fontWeight: 500 }}>
+                      ⚠️ {uploadError}
+                    </div>
+                  )}
+
+                  <div className="create-post-actions">
+                    <div className="create-post-btns">
+                      <button
+                        className="create-post-action-btn"
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        <span className="action-icon">📷</span>
+                        <span>Photo</span>
+                      </button>
+                      <button
+                        className="create-post-action-btn"
+                        type="button"
+                        onClick={() => videoInputRef.current?.click()}
+                      >
+                        <span className="action-icon">⚡</span>
+                        <span>Real Time (10s)</span>
+                      </button>
+
+                      {/* Hidden File Inputs */}
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleImageChange}
+                        style={{ display: 'none' }}
+                      />
+                      <input
+                        ref={videoInputRef}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={handleVideoChange}
+                        style={{ display: 'none' }}
+                      />
+                    </div>
+
+                    <button
+                      className="create-post-submit"
+                      onClick={handlePost}
+                      disabled={(!postText.trim() && !selectedImage && !selectedVideo) || isPosting}
+                    >
+                      {isPosting ? 'Posting...' : 'Post'}
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div className="post-content">
-                <p className="post-text">{post.text}</p>
-              </div>
-              <div className="post-actions">
-                <button className="post-action-btn">
-                  <span className="action-icon">🤍</span>
-                  <span>{post.likes}</span>
-                </button>
-                <button className="post-action-btn">
-                  <span className="action-icon">💬</span>
-                  <span>{post.comments}</span>
-                </button>
-                <button className="post-action-btn">
-                  <span className="action-icon">🔄</span>
-                </button>
-                <button className="post-action-btn" style={{ marginLeft: 'auto' }}>
-                  <span className="action-icon">📑</span>
-                </button>
-              </div>
-            </article>
-          ))}
+              )}
+            </div>
+          )}
+
+          {posts.length === 0 ? (
+            <div className="profile-posts-empty">
+              <div className="profile-posts-empty-icon">🏛️</div>
+              <p>No posts yet. Share something with the world!</p>
+            </div>
+          ) : (
+            <div className="profile-posts">
+              {posts.map((post) => {
+                const state = feedState[post.id] || {
+                  liked: post.liked || false,
+                  saved: false,
+                  likes: post.likes || 0,
+                }
+                return (
+                  <article key={post.id} className="feed-post">
+                    <div className="post-header">
+                      <div className="post-avatar">
+                        {profileUser?.avatar ? (
+                          <img src={resolveUrl(profileUser.avatar)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                        ) : (
+                          getInitials(profileUser?.fullName)
+                        )}
+                      </div>
+                      <div className="post-user-info">
+                        <div className="post-user-name">{profileUser?.fullName}</div>
+                        <div className="post-user-meta">
+                          <span>@{profileUser?.username}</span>
+                          <span className="post-dot" />
+                          <span>{post.timestamp}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="post-content">
+                      <p className="post-text">{post.text}</p>
+                      
+                      {/* Image rendering */}
+                      {post.image && (
+                        <div className="post-image" style={{ display: 'block', height: 'auto', background: 'none' }}>
+                          <img src={resolveUrl(post.image)} alt="" style={{ maxWidth: '100%', maxHeight: '450px', borderRadius: '12px', marginTop: '12px', objectFit: 'contain' }} />
+                        </div>
+                      )}
+
+                      {/* Video rendering */}
+                      {post.video && (
+                        <div style={{ marginTop: '12px', borderRadius: '12px', overflow: 'hidden', background: '#000', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+                          <video src={resolveUrl(post.video)} controls style={{ width: '100%', maxHeight: '400px', borderRadius: '12px' }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="post-actions">
+                      <button
+                        className={`post-action-btn${state.liked ? ' liked' : ''}`}
+                        onClick={() => toggleLike(post.id)}
+                      >
+                        <span className="action-icon">{state.liked ? '❤️' : '🤍'}</span>
+                        <span>{state.likes}</span>
+                      </button>
+                      <button className="post-action-btn">
+                        <span className="action-icon">💬</span>
+                        <span>{post.comments}</span>
+                      </button>
+                      <button className="post-action-btn">
+                        <span className="action-icon">🔄</span>
+                      </button>
+                      <button
+                        className={`post-action-btn${state.saved ? ' saved' : ''}`}
+                        onClick={() => toggleSave(post.id)}
+                        style={{ marginLeft: 'auto' }}
+                      >
+                        <span className="action-icon">{state.saved ? '🔖' : '📑'}</span>
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
