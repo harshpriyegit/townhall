@@ -22,10 +22,29 @@ async function apiFetch(endpoint, options = {}) {
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, config)
-  const data = await response.json()
+  
+  let data = null
+  const contentType = response.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      data = await response.json()
+    } catch (e) {
+      throw new Error('Failed to parse server response as JSON')
+    }
+  } else {
+    const text = await response.text()
+    if (!response.ok) {
+      throw new Error(text || `Server returned error status ${response.status}`)
+    }
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = { message: text }
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || data.message || 'Something went wrong')
+    throw new Error(data?.error || data?.message || 'Something went wrong')
   }
 
   return data
