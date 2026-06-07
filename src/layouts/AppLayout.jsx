@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getSocket } from '../utils/socket'
 import '../styles/app-layout.css'
 
 const sidebarLinks = [
@@ -42,7 +43,33 @@ function AppLayout() {
   const location = useLocation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeRooms, setActiveRooms] = useState({ voice: false, study: false })
   const dropdownRef = useRef(null)
+
+  // Listen for active room counts
+  useEffect(() => {
+    const socket = getSocket()
+    if (!socket?.connected) return
+
+    const handleVoiceRooms = (data) => {
+      setActiveRooms((prev) => ({ ...prev, voice: Array.isArray(data) && data.length > 0 }))
+    }
+    const handleVideoRooms = (data) => {
+      setActiveRooms((prev) => ({ ...prev, study: Array.isArray(data) && data.length > 0 }))
+    }
+
+    socket.on('voice:rooms', handleVoiceRooms)
+    socket.on('video:rooms', handleVideoRooms)
+
+    // Request initial data
+    socket.emit('voice:get-rooms')
+    socket.emit('video:get-rooms')
+
+    return () => {
+      socket.off('voice:rooms', handleVoiceRooms)
+      socket.off('video:rooms', handleVideoRooms)
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -163,6 +190,9 @@ function AppLayout() {
             if (item.type === 'divider') {
               return <div key={`div-${index}`} className="sidebar-divider" />
             }
+            const hasActivity =
+              (item.to === '/app/voice-rooms' && activeRooms.voice) ||
+              (item.to === '/app/study-rooms' && activeRooms.study)
             return (
               <NavLink
                 key={item.to}
@@ -172,7 +202,10 @@ function AppLayout() {
                   `sidebar-link${isActive ? ' active' : ''}`
                 }
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon">
+                  {item.icon}
+                  {hasActivity && <span className="sidebar-active-dot" />}
+                </span>
                 <span>{item.label}</span>
               </NavLink>
             )

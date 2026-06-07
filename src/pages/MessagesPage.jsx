@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { getSocket } from '../utils/socket'
+import { useAuth } from '../context/AuthContext'
 import '../styles/messages.css'
 
 function getInitials(name) {
@@ -9,14 +11,14 @@ function getInitials(name) {
 const MOCK_CONVERSATIONS = [
   {
     id: 'conv-1',
-    user: { fullName: 'Priya Sharma', username: 'priya' },
+    user: { id: 'user-priya', fullName: 'Priya Sharma', username: 'priya' },
     online: true,
     unread: true,
     lastMessage: 'Hey! Are you coming to the fest tonight?',
     lastTime: '2m ago',
     messages: [
       { id: 1, text: 'Hey! How are you?', sent: false, time: '10:30 AM' },
-      { id: 2, text: 'I\'m good! Just finishing some assignments.', sent: true, time: '10:32 AM' },
+      { id: 2, text: "I'm good! Just finishing some assignments.", sent: true, time: '10:32 AM' },
       { id: 3, text: 'Same here 😅 DSA is killing me', sent: false, time: '10:33 AM' },
       { id: 4, text: 'Haha tell me about it. Want to study together?', sent: true, time: '10:35 AM' },
       { id: 5, text: 'Yes! Library at 6?', sent: false, time: '10:36 AM' },
@@ -26,7 +28,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: 'conv-2',
-    user: { fullName: 'Arjun Kumar', username: 'arjun' },
+    user: { id: 'user-arjun', fullName: 'Arjun Kumar', username: 'arjun' },
     online: false,
     unread: false,
     lastMessage: 'Thanks for the notes!',
@@ -40,7 +42,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: 'conv-3',
-    user: { fullName: 'Sneha Patel', username: 'sneha' },
+    user: { id: 'user-sneha', fullName: 'Sneha Patel', username: 'sneha' },
     online: true,
     unread: true,
     lastMessage: 'Check out this meme 😂',
@@ -55,7 +57,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: 'conv-4',
-    user: { fullName: 'Rahul Verma', username: 'rahul' },
+    user: { id: 'user-rahul', fullName: 'Rahul Verma', username: 'rahul' },
     online: false,
     unread: false,
     lastMessage: 'See you at the hackathon!',
@@ -63,20 +65,32 @@ const MOCK_CONVERSATIONS = [
     messages: [
       { id: 1, text: 'Are you joining the hackathon this weekend?', sent: false, time: 'Yesterday, 4:00 PM' },
       { id: 2, text: 'Definitely! Want to team up?', sent: true, time: 'Yesterday, 4:15 PM' },
-      { id: 3, text: 'Yes! I\'ll bring the snacks 🍕', sent: false, time: 'Yesterday, 4:16 PM' },
+      { id: 3, text: "Yes! I'll bring the snacks 🍕", sent: false, time: 'Yesterday, 4:16 PM' },
       { id: 4, text: 'Haha deal. See you at the hackathon!', sent: true, time: 'Yesterday, 4:18 PM' },
       { id: 5, text: 'See you at the hackathon!', sent: false, time: 'Yesterday, 4:20 PM' },
     ],
   },
 ]
 
+function getConversationId(userId1, userId2) {
+  return [userId1, userId2].sort().join('_')
+}
+
 function MessagesPage() {
+  const { currentUser } = useAuth()
+  const myId = currentUser?._id || currentUser?.id || 'me'
+
   const [activeConvo, setActiveConvo] = useState(MOCK_CONVERSATIONS[0].id)
   const [messageInput, setMessageInput] = useState('')
   const [conversations, setConversations] = useState(MOCK_CONVERSATIONS)
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileShowChat, setMobileShowChat] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
+  const [typingUser, setTypingUser] = useState('')
+
   const messagesEndRef = useRef(null)
+  const typingTimeoutRef = useRef(null)
+  const socketRef = useRef(null)
 
   const currentConvo = conversations.find((c) => c.id === activeConvo)
 
@@ -86,32 +100,117 @@ function MessagesPage() {
       )
     : conversations
 
+  // ── Socket connection & listeners ──────────────────────────
+  useEffect(() => {
+    const socket = getSocket()
+    socketRef.current = socket
+
+    if (!socket.connected) return
+
+    const handleIncomingMessage = (data) => {
+      const { senderId, content, conversationId: convId } = data
+      const newMsg = {
+        id: Date.now() + Math.random(),
+        text: content,
+        sent: senderId === myId,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          const cConvId = getConversationId(myId, c.user.id)
+          if (cConvId === convId && senderId !== myId) {
+            return {
+              ...c,
+              messages: [...c.messages, newMsg],
+              lastMessage: content,
+              lastTime: 'Just now',
+              unread: c.id !== activeConvo,
+            }
+          }
+          return c
+        })
+      )
+    }
+
+    const handleTyping = (data) => {
+      if (data.senderId !== myId) {
+        setIsTyping(true)
+        setTypingUser(data.senderName || 'Someone')
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false)
+          setTypingUser('')
+        }, 2000)
+      }
+    }
+
+    socket.on('chat:message', handleIncomingMessage)
+    socket.on('chat:typing', handleTyping)
+
+    return () => {
+      socket.off('chat:message', handleIncomingMessage)
+      socket.off('chat:typing', handleTyping)
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    }
+  }, [myId, activeConvo])
+
+  // ── Auto-scroll ────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [currentConvo?.messages.length])
 
+  // ── Join conversation room on select ──────────────────────
+  const joinConversationRoom = useCallback(
+    (otherUserId) => {
+      const socket = socketRef.current
+      if (socket?.connected) {
+        const conversationId = getConversationId(myId, otherUserId)
+        socket.emit('chat:join', conversationId)
+      }
+    },
+    [myId]
+  )
+
+  // ── Send message ──────────────────────────────────────────
   const handleSend = () => {
     if (!messageInput.trim() || !currentConvo) return
 
+    const content = messageInput.trim()
     const newMessage = {
       id: Date.now(),
-      text: messageInput.trim(),
+      text: content,
       sent: true,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
 
+    // Update local state
     setConversations((prev) =>
       prev.map((c) =>
         c.id === activeConvo
           ? {
               ...c,
               messages: [...c.messages, newMessage],
-              lastMessage: newMessage.text,
+              lastMessage: content,
               lastTime: 'Just now',
             }
           : c
       )
     )
+
+    // Emit via socket
+    const socket = socketRef.current
+    if (socket?.connected) {
+      const conversationId = getConversationId(myId, currentConvo.user.id)
+      socket.emit('chat:message', {
+        senderId: myId,
+        receiverId: currentConvo.user.id,
+        content,
+        conversationId,
+      })
+    }
+
     setMessageInput('')
   }
 
@@ -122,12 +221,33 @@ function MessagesPage() {
     }
   }
 
+  // ── Typing indicator emit ─────────────────────────────────
+  const handleInputChange = (e) => {
+    setMessageInput(e.target.value)
+
+    const socket = socketRef.current
+    if (socket?.connected && currentConvo) {
+      const conversationId = getConversationId(myId, currentConvo.user.id)
+      socket.emit('chat:typing', {
+        senderId: myId,
+        senderName: currentUser?.fullName || 'Someone',
+        conversationId,
+      })
+    }
+  }
+
   const selectConversation = (id) => {
+    const convo = conversations.find((c) => c.id === id)
     setActiveConvo(id)
     setMobileShowChat(true)
+    setIsTyping(false)
+    setTypingUser('')
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, unread: false } : c))
     )
+    if (convo) {
+      joinConversationRoom(convo.user.id)
+    }
   }
 
   return (
@@ -185,7 +305,11 @@ function MessagesPage() {
             <div className="chat-header-info">
               <div className="chat-header-name">{currentConvo.user.fullName}</div>
               <div className={`chat-header-status${currentConvo.online ? '' : ' offline'}`}>
-                {currentConvo.online ? 'Online' : 'Offline'}
+                {isTyping ? (
+                  <span className="typing-indicator-text">typing...</span>
+                ) : (
+                  currentConvo.online ? 'Online' : 'Offline'
+                )}
               </div>
             </div>
           </div>
@@ -202,6 +326,15 @@ function MessagesPage() {
                 </div>
               </div>
             ))}
+            {isTyping && (
+              <div className="chat-message received">
+                <div className="chat-bubble typing-bubble">
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                  <span className="typing-dot" />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -212,7 +345,7 @@ function MessagesPage() {
               className="chat-input"
               placeholder="Type a message..."
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
             />
             <button

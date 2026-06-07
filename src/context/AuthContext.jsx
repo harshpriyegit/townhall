@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authAPI } from '../utils/api'
+import { connectSocket, disconnectSocket } from '../utils/socket'
 
 const AuthContext = createContext(null)
 
@@ -31,6 +32,7 @@ export function AuthProvider({ children }) {
       .then((data) => {
         const user = data.user || data
         localStorage.setItem(USER_KEY, JSON.stringify(user))
+        connectSocket(user._id || user.id)
         setCurrentUser(user)
       })
       .catch(() => {
@@ -50,6 +52,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(USER_KEY, JSON.stringify(user))
     setCurrentUser(user)
+    connectSocket(user._id || user.id)
     return user
   }, [])
 
@@ -61,10 +64,12 @@ export function AuthProvider({ children }) {
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(USER_KEY, JSON.stringify(user))
     setCurrentUser(user)
+    connectSocket(user._id || user.id)
     return user
   }, [])
 
   const logout = useCallback(() => {
+    disconnectSocket()
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem('townhall_posts')

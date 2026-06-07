@@ -356,6 +356,24 @@
   width: 24px;
   text-align: center;
   flex-shrink: 0;
+  position: relative;
+}
+
+.sidebar-active-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38A169;
+  border: 2px solid var(--bg-primary);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sidebar-divider {

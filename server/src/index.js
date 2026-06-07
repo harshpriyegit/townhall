@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { setupSocket } from './socket/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,7 +18,11 @@ import cuffingRoutes from './routes/cuffing.js';
 import notificationRoutes from './routes/notifications.js';
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Setup Socket.IO
+const io = setupSocket(server);
 
 // CORS configuration
 app.use(
@@ -64,9 +70,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🏛️  TownHall API running on http://localhost:${PORT}`);
   console.log(`📡 CORS enabled for: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+  console.log(`🔌 Socket.IO ready for real-time connections`);
 });
 
 export default app;
