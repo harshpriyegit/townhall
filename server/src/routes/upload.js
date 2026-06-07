@@ -73,4 +73,40 @@ router.post('/post-image', authenticateToken, upload.single('image'), async (req
   }
 })
 
+// Configure multer for videos
+const videoStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const uniqueName = `video-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`
+    cb(null, uniqueName)
+  }
+})
+
+const videoUpload = multer({
+  storage: videoStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg', 'video/x-matroska']
+    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only videos are allowed'))
+    }
+  }
+})
+
+// POST /api/upload/post-video - Upload 10-second video for a post
+router.post('/post-video', authenticateToken, videoUpload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+    const videoUrl = `/uploads/${req.file.filename}`
+    res.json({ videoUrl })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 export default router
+

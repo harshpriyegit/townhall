@@ -4,7 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { usersAPI, uploadAPI } from '../utils/api'
 import '../styles/profile.css'
 
-const API_BASE = 'http://localhost:5000'
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : window.location.origin
+
 
 function getInitials(name) {
   if (!name) return '?'
@@ -32,30 +35,6 @@ function resolveAvatarUrl(avatar) {
   return `${API_BASE}${avatar}`
 }
 
-const MOCK_USER_POSTS = [
-  {
-    id: 'profile-1',
-    text: 'Excited to start building with React and Vite! The DX is incredible. 🚀',
-    timestamp: '3h ago',
-    likes: 18,
-    comments: 4,
-  },
-  {
-    id: 'profile-2',
-    text: 'Just completed my internship at a startup. What an experience! Grateful for the team. 💼',
-    timestamp: '2d ago',
-    likes: 89,
-    comments: 15,
-  },
-  {
-    id: 'profile-3',
-    text: 'Weekend vibes at the campus lake 🏞️ Nothing beats a good sunset after a long week.',
-    timestamp: '5d ago',
-    likes: 54,
-    comments: 8,
-  },
-]
-
 const BIO_MAX = 160
 
 function ProfilePage() {
@@ -64,7 +43,7 @@ function ProfilePage() {
   const [activeTab, setActiveTab] = useState('posts')
   const [isFollowing, setIsFollowing] = useState(false)
   const [profileUser, setProfileUser] = useState(null)
-  const [posts, setPosts] = useState(MOCK_USER_POSTS)
+  const [posts, setPosts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
 
@@ -122,6 +101,8 @@ function ProfilePage() {
       } catch (err) {
         console.warn('Failed to fetch profile, using local data:', err.message)
         if (cancelled) return
+        setPosts([])
+
         if (isOwnProfile && currentUser) {
           setProfileUser({
             _id: currentUser._id || currentUser.id,

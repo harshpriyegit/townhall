@@ -144,4 +144,18 @@ export const uploadAPI = {
     if (!response.ok) throw new Error(data.error || 'Upload failed')
     return data
   },
+  postVideo: async (file) => {
+    const formData = new FormData()
+    formData.append('video', file)
+    const token = getToken()
+    const response = await fetch(`${API_URL}/upload/post-video`, {
+      method: 'POST',
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: formData,
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Upload failed')
+    return data
+  },
 }
+

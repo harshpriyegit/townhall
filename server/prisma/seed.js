@@ -1,4 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import dns from 'dns';
+
+// Force Node.js to use Google DNS to bypass local ISP DNS resolution issues
+dns.setServers(['8.8.8.8']);
+
 
 const prisma = new PrismaClient();
 

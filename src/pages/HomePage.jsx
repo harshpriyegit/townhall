@@ -1,7 +1,17 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { postsAPI } from '../utils/api'
+import { postsAPI, uploadAPI } from '../utils/api'
 import '../styles/home.css'
+
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : window.location.origin
+
+function resolveUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_BASE}${url}`
+}
 
 function getInitials(name) {
   if (!name) return '?'
@@ -23,79 +33,6 @@ function timeAgo(dateStr) {
   return date.toLocaleDateString()
 }
 
-const MOCK_POSTS = [
-  {
-    id: 'mock-1',
-    user: { fullName: 'Arjun Kumar', username: 'arjun' },
-    content: 'Just finished my semester project! 🎉 Can\'t believe how much I learned about machine learning this semester.',
-    text: 'Just finished my semester project! 🎉 Can\'t believe how much I learned about machine learning this semester.',
-    image: null,
-    timestamp: '2h ago',
-    likes: 24,
-    likesCount: 24,
-    commentsCount: 5,
-    comments: 5,
-    liked: false,
-    saved: false,
-  },
-  {
-    id: 'mock-2',
-    user: { fullName: 'Priya Sharma', username: 'priya' },
-    content: 'Beautiful sunset from the VIT campus today 🌅',
-    text: 'Beautiful sunset from the VIT campus today 🌅',
-    image: '🌅',
-    timestamp: '4h ago',
-    likes: 48,
-    likesCount: 48,
-    commentsCount: 12,
-    comments: 12,
-    liked: false,
-    saved: false,
-  },
-  {
-    id: 'mock-3',
-    user: { fullName: 'Rahul Verma', username: 'rahul' },
-    content: 'Anyone up for a study session at the library tonight? DSA exam tomorrow 📚',
-    text: 'Anyone up for a study session at the library tonight? DSA exam tomorrow 📚',
-    image: null,
-    timestamp: '5h ago',
-    likes: 15,
-    likesCount: 15,
-    commentsCount: 8,
-    comments: 8,
-    liked: false,
-    saved: false,
-  },
-  {
-    id: 'mock-4',
-    user: { fullName: 'Sneha Patel', username: 'sneha' },
-    content: 'The new cafeteria menu is actually fire 🔥 They finally added south Indian breakfast!',
-    text: 'The new cafeteria menu is actually fire 🔥 They finally added south Indian breakfast!',
-    image: null,
-    timestamp: '8h ago',
-    likes: 67,
-    likesCount: 67,
-    commentsCount: 23,
-    comments: 23,
-    liked: false,
-    saved: false,
-  },
-  {
-    id: 'mock-5',
-    user: { fullName: 'Vikram Singh', username: 'vikram' },
-    content: 'Placement season is here! Good luck to all fellow batchmates 🍀',
-    text: 'Placement season is here! Good luck to all fellow batchmates 🍀',
-    image: null,
-    timestamp: '1d ago',
-    likes: 156,
-    likesCount: 156,
-    commentsCount: 45,
-    comments: 45,
-    liked: false,
-    saved: false,
-  },
-]
-
 function HomePage() {
   const { currentUser } = useAuth()
   const [expanded, setExpanded] = useState(false)
@@ -105,6 +42,16 @@ function HomePage() {
   const [isPosting, setIsPosting] = useState(false)
   const [feedError, setFeedError] = useState('')
   const [feedState, setFeedState] = useState({})
+
+  // Image & Video attachment states
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [selectedVideo, setSelectedVideo] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
+  const [uploadError, setUploadError] = useState('')
+
+  const imageInputRef = useRef(null)
+  const videoInputRef = useRef(null)
 
   // Fetch posts from API on mount
   useEffect(() => {
@@ -120,6 +67,7 @@ function HomePage() {
           content: p.content || p.text || '',
           text: p.content || p.text || '',
           image: p.imageUrl || p.image || null,
+          video: p.videoUrl || p.video || null,
           timestamp: timeAgo(p.createdAt) || p.timestamp || '',
           likes: p.likesCount ?? p.likes ?? 0,
           likesCount: p.likesCount ?? p.likes ?? 0,
@@ -128,7 +76,7 @@ function HomePage() {
           liked: p.liked || false,
           saved: false,
         }))
-        setPosts(apiPosts.length > 0 ? apiPosts : MOCK_POSTS)
+        setPosts(apiPosts)
         // Build initial feedState
         const state = {}
         apiPosts.forEach((p) => {
@@ -137,13 +85,9 @@ function HomePage() {
         setFeedState(state)
       } catch (err) {
         if (cancelled) return
-        console.warn('Failed to fetch posts, using mock data:', err.message)
-        setPosts(MOCK_POSTS)
-        const state = {}
-        MOCK_POSTS.forEach((p) => {
-          state[p.id] = { liked: false, saved: false, likes: p.likes }
-        })
-        setFeedState(state)
+        console.warn('Failed to fetch posts, showing empty feed:', err.message)
+        setPosts([])
+        setFeedState({})
         setFeedError('')
       } finally {
         if (!cancelled) setIsLoadingFeed(false)
@@ -154,18 +98,81 @@ function HomePage() {
     return () => { cancelled = true }
   }, [])
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setSelectedImage(file)
+    setSelectedVideo(null)
+    setVideoPreview(null)
+    setImagePreview(URL.createObjectURL(file))
+    setUploadError('')
+  }
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Enforce 10-second limit client-side
+    const videoEl = document.createElement('video')
+    videoEl.preload = 'metadata'
+    videoEl.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(videoEl.src)
+      if (videoEl.duration > 10.5) {
+        setUploadError('Videos under "Real Time" are strictly limited to 10 seconds!')
+        e.target.value = ''
+        return
+      }
+      setSelectedVideo(file)
+      setSelectedImage(null)
+      setImagePreview(null)
+      setVideoPreview(URL.createObjectURL(file))
+      setUploadError('')
+    }
+    videoEl.src = URL.createObjectURL(file)
+  }
+
+  const removeAttachment = () => {
+    setSelectedImage(null)
+    setSelectedVideo(null)
+    setImagePreview(null)
+    setVideoPreview(null)
+    setUploadError('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (videoInputRef.current) videoInputRef.current.value = ''
+  }
+
   const handlePost = useCallback(async () => {
-    if (!postText.trim()) return
+    if (!postText.trim() && !selectedImage && !selectedVideo) return
     setIsPosting(true)
+    setUploadError('')
+
+    let imageUrl = null
+    let videoUrl = null
 
     try {
-      const data = await postsAPI.create({ content: postText.trim() })
+      // 1. Upload files first if selected
+      if (selectedImage) {
+        const result = await uploadAPI.postImage(selectedImage)
+        imageUrl = result.imageUrl
+      } else if (selectedVideo) {
+        const result = await uploadAPI.postVideo(selectedVideo)
+        videoUrl = result.videoUrl
+      }
+
+      // 2. Create post
+      const data = await postsAPI.create({
+        content: postText.trim(),
+        imageUrl,
+        videoUrl
+      })
+
       const newPost = {
-        id: data.post?._id || data._id || `user-${Date.now()}`,
-        user: data.post?.author || currentUser || { fullName: 'You', username: 'you' },
+        id: data.id || data.post?.id || `user-${Date.now()}`,
+        user: data.author || currentUser || { fullName: 'You', username: 'you' },
         content: postText.trim(),
         text: postText.trim(),
-        image: null,
+        image: imageUrl,
+        video: videoUrl,
         timestamp: 'Just now',
         likes: 0,
         likesCount: 0,
@@ -174,36 +181,21 @@ function HomePage() {
         liked: false,
         saved: false,
       }
+
       setPosts((prev) => [newPost, ...prev])
       setPostText('')
+      setSelectedImage(null)
+      setSelectedVideo(null)
+      setImagePreview(null)
+      setVideoPreview(null)
       setExpanded(false)
     } catch (err) {
-      console.warn('Failed to create post via API, saving locally:', err.message)
-      // Fallback — create local post
-      const newPost = {
-        id: `user-${Date.now()}`,
-        user: {
-          fullName: currentUser?.fullName || 'You',
-          username: currentUser?.username || 'you',
-        },
-        content: postText.trim(),
-        text: postText.trim(),
-        image: null,
-        timestamp: 'Just now',
-        likes: 0,
-        likesCount: 0,
-        commentsCount: 0,
-        comments: 0,
-        liked: false,
-        saved: false,
-      }
-      setPosts((prev) => [newPost, ...prev])
-      setPostText('')
-      setExpanded(false)
+      console.error('Failed to create post:', err)
+      setUploadError(err.message || 'Failed to submit post. Please try again.')
     } finally {
       setIsPosting(false)
     }
-  }, [postText, currentUser])
+  }, [postText, selectedImage, selectedVideo, currentUser])
 
   const toggleLike = useCallback(async (postId) => {
     // Optimistic update
@@ -309,25 +301,88 @@ function HomePage() {
               autoFocus
               disabled={isPosting}
             />
+
+            {/* Preview image or video */}
+            {(imagePreview || videoPreview) && (
+              <div style={{ position: 'relative', marginTop: '12px', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
+                {imagePreview && (
+                  <img src={imagePreview} alt="Preview" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px' }} />
+                )}
+                {videoPreview && (
+                  <video src={videoPreview} controls style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#000', borderRadius: '8px' }} />
+                )}
+                <button
+                  type="button"
+                  onClick={removeAttachment}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                    border: 'none',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {uploadError && (
+              <div style={{ marginTop: '10px', color: '#DC2626', fontSize: '0.85rem', fontWeight: 500 }}>
+                ⚠️ {uploadError}
+              </div>
+            )}
+
             <div className="create-post-actions">
               <div className="create-post-btns">
-                <button className="create-post-action-btn" type="button">
+                <button
+                  className="create-post-action-btn"
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                >
                   <span className="action-icon">📷</span>
                   <span>Photo</span>
                 </button>
-                <button className="create-post-action-btn" type="button">
-                  <span className="action-icon">🎥</span>
-                  <span>Video</span>
+                <button
+                  className="create-post-action-btn"
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <span className="action-icon">⚡</span>
+                  <span>Real Time (10s)</span>
                 </button>
-                <button className="create-post-action-btn" type="button">
-                  <span className="action-icon">📍</span>
-                  <span>Location</span>
-                </button>
+
+                {/* Hidden File Inputs */}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
+                />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={handleVideoChange}
+                  style={{ display: 'none' }}
+                />
               </div>
+
               <button
                 className="create-post-submit"
                 onClick={handlePost}
-                disabled={!postText.trim() || isPosting}
+                disabled={(!postText.trim() && !selectedImage && !selectedVideo) || isPosting}
               >
                 {isPosting ? 'Posting...' : 'Post'}
               </button>
@@ -337,67 +392,85 @@ function HomePage() {
       </div>
 
       {/* ── Feed ─────────────────────────────────────────── */}
-      {posts.map((post, index) => {
-        const state = feedState[post.id] || {
-          liked: post.liked,
-          saved: post.saved || false,
-          likes: post.likesCount || post.likes || 0,
-        }
+      {posts.length === 0 ? (
+        <div className="feed-empty">
+          <div className="feed-empty-icon">🏛️</div>
+          <p>No posts yet. Be the first to share something!</p>
+        </div>
+      ) : (
+        posts.map((post) => {
+          const state = feedState[post.id] || {
+            liked: post.liked,
+            saved: post.saved || false,
+            likes: post.likesCount || post.likes || 0,
+          }
 
-        return (
-          <article key={post.id} className="feed-post" style={{ opacity: 0, animationFillMode: 'forwards' }}>
-            <div className="post-header">
-              <div className="post-avatar">
-                {getInitials(post.user?.fullName)}
-              </div>
-              <div className="post-user-info">
-                <div className="post-user-name">{post.user?.fullName}</div>
-                <div className="post-user-meta">
-                  <span>@{post.user?.username}</span>
-                  <span className="post-dot" />
-                  <span>{post.timestamp}</span>
+          return (
+            <article key={post.id} className="feed-post" style={{ opacity: 1 }}>
+              <div className="post-header">
+                <div className="post-avatar">
+                  {post.user?.avatar ? (
+                    <img src={resolveUrl(post.user.avatar)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    getInitials(post.user?.fullName)
+                  )}
                 </div>
-              </div>
-              <button className="post-more-btn" title="More">⋯</button>
-            </div>
-
-            <div className="post-content">
-              <p className="post-text">{post.content || post.text}</p>
-              {post.image && typeof post.image === 'string' && post.image.startsWith('http') ? (
-                <div className="post-image">
-                  <img src={post.image} alt="" style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '12px' }} />
+                <div className="post-user-info">
+                  <div className="post-user-name">{post.user?.fullName}</div>
+                  <div className="post-user-meta">
+                    <span>@{post.user?.username}</span>
+                    <span className="post-dot" />
+                    <span>{post.timestamp}</span>
+                  </div>
                 </div>
-              ) : post.image ? (
-                <div className="post-image">{post.image}</div>
-              ) : null}
-            </div>
+                <button className="post-more-btn" title="More">⋯</button>
+              </div>
 
-            <div className="post-actions">
-              <button
-                className={`post-action-btn${state.liked ? ' liked' : ''}`}
-                onClick={() => toggleLike(post.id)}
-              >
-                <span className="action-icon">{state.liked ? '❤️' : '🤍'}</span>
-                <span>{state.likes}</span>
-              </button>
-              <button className="post-action-btn">
-                <span className="action-icon">💬</span>
-                <span>{post.commentsCount || post.comments || 0}</span>
-              </button>
-              <button className="post-action-btn">
-                <span className="action-icon">🔄</span>
-              </button>
-              <button
-                className={`post-action-btn${state.saved ? ' saved' : ''}`}
-                onClick={() => toggleSave(post.id)}
-                style={{ marginLeft: 'auto' }}
-              >
-                <span className="action-icon">{state.saved ? '🔖' : '📑'}</span>
-              </button>
-            </div>
-          </article>
-        )
-      })}
+              <div className="post-content">
+                <p className="post-text">{post.content || post.text}</p>
+                
+                {/* Image rendering */}
+                {post.image && (
+                  <div className="post-image" style={{ display: 'block', height: 'auto', background: 'none' }}>
+                    <img src={resolveUrl(post.image)} alt="" style={{ maxWidth: '100%', maxHeight: '450px', borderRadius: '12px', marginTop: '12px', objectFit: 'contain' }} />
+                  </div>
+                )}
+
+                {/* Video rendering */}
+                {post.video && (
+                  <div style={{ marginTop: '12px', borderRadius: '12px', overflow: 'hidden', background: '#000', maxFormat: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <video src={resolveUrl(post.video)} controls style={{ width: '100%', maxHeight: '400px', borderRadius: '12px' }} />
+                  </div>
+                )}
+              </div>
+
+              <div className="post-actions">
+                <button
+                  className={`post-action-btn${state.liked ? ' liked' : ''}`}
+                  onClick={() => toggleLike(post.id)}
+                >
+                  <span className="action-icon">{state.liked ? '❤️' : '🤍'}</span>
+                  <span>{state.likes}</span>
+                </button>
+                <button className="post-action-btn">
+                  <span className="action-icon">💬</span>
+                  <span>{post.commentsCount || post.comments || 0}</span>
+                </button>
+                <button className="post-action-btn">
+                  <span className="action-icon">🔄</span>
+                </button>
+                <button
+                  className={`post-action-btn${state.saved ? ' saved' : ''}`}
+                  onClick={() => toggleSave(post.id)}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  <span className="action-icon">{state.saved ? '🔖' : '📑'}</span>
+                </button>
+              </div>
+            </article>
+          )
+        })
+      )}
     </div>
   )
 }
