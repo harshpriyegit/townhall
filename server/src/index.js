@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { setupSocket } from './socket/index.js';
 
 // Load environment variables
@@ -16,6 +18,11 @@ import anonymousRoutes from './routes/anonymous.js';
 import datingRoutes from './routes/dating.js';
 import cuffingRoutes from './routes/cuffing.js';
 import notificationRoutes from './routes/notifications.js';
+import uploadRoutes from './routes/upload.js';
+
+// ESM __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
@@ -36,6 +43,9 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Health check
 app.get('/', (req, res) => {
   res.json({
@@ -54,6 +64,7 @@ app.use('/api/anonymous', anonymousRoutes);
 app.use('/api/dating', datingRoutes);
 app.use('/api/cuffing', cuffingRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {

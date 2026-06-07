@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { usersAPI } from '../utils/api'
+import { usersAPI, uploadAPI } from '../utils/api'
 import '../styles/profile.css'
+
+const API_BASE = 'http://localhost:5000'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -22,6 +24,12 @@ function timeAgo(dateStr) {
   const diffD = Math.floor(diffH / 24)
   if (diffD < 7) return `${diffD}d ago`
   return date.toLocaleDateString()
+}
+
+function resolveAvatarUrl(avatar) {
+  if (!avatar) return null
+  if (avatar.startsWith('http')) return avatar
+  return `${API_BASE}${avatar}`
 }
 
 const MOCK_USER_POSTS = [
@@ -48,15 +56,29 @@ const MOCK_USER_POSTS = [
   },
 ]
 
+const BIO_MAX = 160
+
 function ProfilePage() {
   const { username: paramUsername } = useParams()
-  const { currentUser } = useAuth()
+  const { currentUser, updateUser } = useAuth()
   const [activeTab, setActiveTab] = useState('posts')
   const [isFollowing, setIsFollowing] = useState(false)
   const [profileUser, setProfileUser] = useState(null)
   const [posts, setPosts] = useState(MOCK_USER_POSTS)
   const [isLoading, setIsLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editFullName, setEditFullName] = useState('')
+  const [editBio, setEditBio] = useState('')
+  const [editAvatarPreview, setEditAvatarPreview] = useState(null)
+  const [editAvatarFile, setEditAvatarFile] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const fileInputRef = useRef(null)
 
   const isOwnProfile = !paramUsername || paramUsername === currentUser?.username
 
@@ -83,7 +105,7 @@ function ProfilePage() {
           avatar: user.avatar || user.profilePicture || null,
           followers: user.followersCount ?? user.followers ?? 0,
           following: user.followingCount ?? user.following ?? 0,
-          postsCount: user.postsCount ?? 0,
+          postsCount: user.postCount ?? user.postsCount ?? 0,
         })
         setIsFollowing(user.isFollowing || false)
 
@@ -100,9 +122,17 @@ function ProfilePage() {
       } catch (err) {
         console.warn('Failed to fetch profile, using local data:', err.message)
         if (cancelled) return
-        // Fallback to local user data
         if (isOwnProfile && currentUser) {
-          setProfileUser(currentUser)
+          setProfileUser({
+            _id: currentUser._id || currentUser.id,
+            fullName: currentUser.fullName || currentUser.username,
+            username: currentUser.username,
+            bio: currentUser.bio || '',
+            avatar: currentUser.avatar || null,
+            followers: currentUser.followersCount ?? 0,
+            following: currentUser.followingCount ?? 0,
+            postsCount: currentUser.postsCount ?? 0,
+          })
         } else {
           setProfileUser({
             fullName: paramUsername?.charAt(0).toUpperCase() + paramUsername?.slice(1) || 'User',
@@ -122,6 +152,93 @@ function ProfilePage() {
     return () => { cancelled = true }
   }, [paramUsername, isOwnProfile, currentUser])
 
+  // Start edit mode
+  const handleStartEdit = () => {
+    setEditFullName(profileUser?.fullName || '')
+    setEditBio(profileUser?.bio || '')
+    setEditAvatarPreview(null)
+    setEditAvatarFile(null)
+    setSaveError('')
+    setSaveSuccess(false)
+    setIsEditing(true)
+  }
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditAvatarPreview(null)
+    setEditAvatarFile(null)
+    setSaveError('')
+    setSaveSuccess(false)
+  }
+
+  // File input change
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file)
+    setEditAvatarPreview(previewUrl)
+    setEditAvatarFile(file)
+
+    // Upload right away
+    setIsUploading(true)
+    try {
+      const result = await uploadAPI.avatar(file)
+      // Update local state with the new URL from server
+      setProfileUser((prev) => prev ? { ...prev, avatar: result.avatarUrl } : prev)
+      updateUser({ avatar: result.avatarUrl })
+    } catch (err) {
+      console.error('Avatar upload failed:', err)
+      setSaveError('Avatar upload failed. Try again.')
+      // Revert preview
+      setEditAvatarPreview(null)
+      setEditAvatarFile(null)
+    } finally {
+      setIsUploading(false)
+    }
+
+    // Reset input value so same file can be re-selected
+    e.target.value = ''
+  }
+
+  // Save profile
+  const handleSaveProfile = async () => {
+    setIsSaving(true)
+    setSaveError('')
+    setSaveSuccess(false)
+
+    try {
+      const result = await usersAPI.updateProfile({
+        fullName: editFullName.trim(),
+        bio: editBio.trim(),
+      })
+
+      const updated = result.user || result
+      setProfileUser((prev) => ({
+        ...prev,
+        fullName: updated.fullName || editFullName.trim(),
+        bio: updated.bio ?? editBio.trim(),
+      }))
+      updateUser({
+        fullName: updated.fullName || editFullName.trim(),
+        bio: updated.bio ?? editBio.trim(),
+      })
+
+      setSaveSuccess(true)
+      setTimeout(() => {
+        setIsEditing(false)
+        setSaveSuccess(false)
+      }, 1200)
+    } catch (err) {
+      console.error('Save profile error:', err)
+      setSaveError(err.message || 'Failed to save. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleFollow = async () => {
     if (!profileUser?._id) {
       setIsFollowing(!isFollowing)
@@ -131,7 +248,6 @@ function ProfilePage() {
     setFollowLoading(true)
     const prevState = isFollowing
 
-    // Optimistic
     setIsFollowing(!prevState)
     setProfileUser((prev) => prev ? {
       ...prev,
@@ -153,6 +269,9 @@ function ProfilePage() {
   }
 
   const postsCount = profileUser?.postsCount ?? posts.length
+
+  // Determine avatar display URL
+  const displayAvatar = editAvatarPreview || resolveAvatarUrl(profileUser?.avatar)
 
   // Loading skeleton
   if (isLoading) {
@@ -191,40 +310,142 @@ function ProfilePage() {
         <div className="profile-cover" />
         <div className="profile-header-body">
           <div className="profile-avatar-wrapper">
-            <div className="profile-avatar">
-              {profileUser?.avatar ? (
-                <img src={profileUser.avatar} alt="" />
-              ) : (
-                getInitials(profileUser?.fullName)
-              )}
-            </div>
+            {/* Avatar - clickable in edit mode */}
+            {isEditing ? (
+              <div
+                className="profile-avatar profile-avatar-edit"
+                onClick={() => fileInputRef.current?.click()}
+                title="Change profile photo"
+              >
+                {isUploading && (
+                  <div className="profile-avatar-overlay uploading">
+                    <div className="profile-upload-spinner" />
+                  </div>
+                )}
+                {!isUploading && (
+                  <div className="profile-avatar-overlay">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </div>
+                )}
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt="" />
+                ) : (
+                  getInitials(profileUser?.fullName)
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarFileChange}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            ) : (
+              <div className="profile-avatar">
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt="" />
+                ) : (
+                  getInitials(profileUser?.fullName)
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="profile-info">
-            <div>
-              <h1 className="profile-name">{profileUser?.fullName}</h1>
-              <p className="profile-handle">@{profileUser?.username}</p>
-              {(profileUser?.bio || isOwnProfile) && (
-                <p className="profile-bio">
-                  {profileUser?.bio || 'No bio yet. Tell the world about yourself!'}
-                </p>
-              )}
-            </div>
+          {/* ── Info section: View or Edit mode ─── */}
+          {isEditing ? (
+            <div className="profile-edit-form">
+              <div className="profile-edit-field">
+                <label className="profile-edit-label">Full Name</label>
+                <input
+                  className="profile-edit-input"
+                  type="text"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="Your full name"
+                  maxLength={50}
+                />
+              </div>
 
-            <div>
-              {isOwnProfile ? (
-                <button className="profile-edit-btn">Edit Profile</button>
-              ) : (
+              <div className="profile-edit-field">
+                <label className="profile-edit-label">Bio</label>
+                <textarea
+                  className="profile-edit-textarea"
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value.slice(0, BIO_MAX))}
+                  placeholder="Tell the world about yourself..."
+                  maxLength={BIO_MAX}
+                  rows={3}
+                />
+                <span className={`profile-char-count${editBio.length >= BIO_MAX ? ' at-limit' : ''}`}>
+                  {editBio.length}/{BIO_MAX}
+                </span>
+              </div>
+
+              {saveError && (
+                <div className="profile-edit-error">{saveError}</div>
+              )}
+
+              <div className="profile-edit-actions">
                 <button
-                  className={`profile-follow-btn${isFollowing ? ' following' : ''}`}
-                  onClick={handleFollow}
-                  disabled={followLoading}
+                  className="profile-cancel-btn"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
                 >
-                  {isFollowing ? 'Following' : 'Follow'}
+                  Cancel
                 </button>
-              )}
+                <button
+                  className="profile-save-btn"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving || isUploading}
+                >
+                  {isSaving ? (
+                    <span className="profile-btn-loading">
+                      <span className="profile-btn-spinner" />
+                      Saving…
+                    </span>
+                  ) : saveSuccess ? (
+                    <span className="profile-btn-success">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Saved!
+                    </span>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="profile-info">
+              <div>
+                <h1 className="profile-name">{profileUser?.fullName}</h1>
+                <p className="profile-handle">@{profileUser?.username}</p>
+                {(profileUser?.bio || isOwnProfile) && (
+                  <p className="profile-bio">
+                    {profileUser?.bio || 'No bio yet. Tell the world about yourself!'}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                {isOwnProfile ? (
+                  <button className="profile-edit-btn" onClick={handleStartEdit}>Edit Profile</button>
+                ) : (
+                  <button
+                    className={`profile-follow-btn${isFollowing ? ' following' : ''}`}
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="profile-stats">
             <div className="profile-stat">
@@ -263,7 +484,11 @@ function ProfilePage() {
             <article key={post.id} className="feed-post">
               <div className="post-header">
                 <div className="post-avatar">
-                  {getInitials(profileUser?.fullName)}
+                  {displayAvatar ? (
+                    <img src={displayAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    getInitials(profileUser?.fullName)
+                  )}
                 </div>
                 <div className="post-user-info">
                   <div className="post-user-name">{profileUser?.fullName}</div>

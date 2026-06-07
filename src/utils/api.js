@@ -92,3 +92,33 @@ export const notificationsAPI = {
   markAllRead: () => apiFetch('/notifications/read-all', { method: 'PUT' }),
   markRead: (id) => apiFetch(`/notifications/${id}/read`, { method: 'PUT' }),
 }
+
+// Upload API (uses FormData, not JSON — do NOT set Content-Type header)
+export const uploadAPI = {
+  avatar: async (file) => {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const token = getToken()
+    const response = await fetch(`${API_URL}/upload/avatar`, {
+      method: 'POST',
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: formData,
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Upload failed')
+    return data
+  },
+  postImage: async (file) => {
+    const formData = new FormData()
+    formData.append('image', file)
+    const token = getToken()
+    const response = await fetch(`${API_URL}/upload/post-image`, {
+      method: 'POST',
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: formData,
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Upload failed')
+    return data
+  },
+}
