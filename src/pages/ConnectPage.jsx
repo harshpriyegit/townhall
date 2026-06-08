@@ -421,7 +421,6 @@ export default function ConnectPage() {
   const [pitch, setPitch] = useState(0); 
   const [yaw, setYaw] = useState(0); 
   const [fadeOpacity, setFadeOpacity] = useState(1);
-  const [renderMode, setRenderMode] = useState('interactive'); // 'interactive' | 'cinematic'
   const [batchIndex, setBatchIndex] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [connectionSuccess, setConnectionSuccess] = useState(null); // null | { isMatch: boolean }
@@ -432,56 +431,6 @@ export default function ConnectPage() {
   const previousPos = useRef({ x: 0, y: 0 });
   const accumulatedYaw = useRef(0);
   const apiDiscoverList = useRef([]);
-  const lastInteractionTime = useRef(0);
-
-  const handleModeChange = (mode) => {
-    setRenderMode(mode);
-    if (mode === 'cinematic') {
-      setPitch(0); // Reset vertical pitch for flat horizontal rotation
-    }
-    lastInteractionTime.current = performance.now();
-  };
-
-  // Auto-rotation in both modes (always active in cinematic, and resumes after drag in interactive)
-  useEffect(() => {
-    let lastTime = performance.now();
-    let frameId;
-    
-    const animate = (time) => {
-      const delta = (time - lastTime) / 1000; // seconds
-      lastTime = time;
-      
-      const isInteractive = renderMode === 'interactive';
-      const isCinematic = renderMode === 'cinematic';
-      
-      // Auto-rotate if in cinematic mode, OR if in interactive mode and not dragging and 1.5s has passed since drag
-      const shouldAutoRotate = isCinematic || (isInteractive && !isDragging.current && (time - lastInteractionTime.current > 1500));
-      
-      if (shouldAutoRotate) {
-        // GIF takes 4.6s for a full 360 rotation (78.26 deg/sec).
-        // For interactive mode, we use a slower, more elegant rotation (20 deg/sec) so it's easy to tap profiles.
-        const rotationSpeed = isCinematic ? (360 / 4.6) : 20; 
-        
-        setYaw(prev => {
-          const nextYaw = prev + rotationSpeed * delta;
-          accumulatedYaw.current += rotationSpeed * delta;
-          
-          // Trigger batch swap on 360 degrees
-          if (accumulatedYaw.current >= 360) {
-            accumulatedYaw.current = 0;
-            triggerBatchSwap();
-          }
-          
-          return nextYaw % 360;
-        });
-      }
-      
-      frameId = requestAnimationFrame(animate);
-    };
-    
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId);
-  }, [renderMode, discoverProfiles.length]);
 
   // Preferences configuration state
   const [preferences, setPreferences] = useState(() => {
@@ -654,10 +603,8 @@ export default function ConnectPage() {
 
   // Handle Drag/Touch rotation math
   const handleDragStart = (x, y) => {
-    if (renderMode === 'cinematic') return; // Disable drag in cinematic mode
     isDragging.current = true;
     previousPos.current = { x, y };
-    lastInteractionTime.current = performance.now();
   };
 
   const handleDragMove = (x, y) => {
@@ -681,7 +628,6 @@ export default function ConnectPage() {
     });
 
     previousPos.current = { x, y };
-    lastInteractionTime.current = performance.now();
 
     // Batch loading trigger: Swap profiles upon 360° of accumulated horizontal rotation
     if (accumulatedYaw.current >= 360) {
@@ -692,7 +638,6 @@ export default function ConnectPage() {
 
   const handleDragEnd = () => {
     isDragging.current = false;
-    lastInteractionTime.current = performance.now();
   };
 
   const triggerBatchSwap = () => {
@@ -839,26 +784,10 @@ export default function ConnectPage() {
 
         {/* ── Top Bar ───────────────────────────────────────── */}
         {hasProfile && (
-          <div className="connect-top-bar" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="connect-top-bar">
             <button className="setup-connect-btn" onClick={() => setIsEditing(true)}>
               ⚙️ Set Up Connect
             </button>
-            <div className="moon-mode-toggle">
-              <button 
-                type="button"
-                className={`toggle-mode-btn ${renderMode === 'interactive' ? 'active' : ''}`}
-                onClick={() => handleModeChange('interactive')}
-              >
-                🎮 Interactive 3D
-              </button>
-              <button 
-                type="button"
-                className={`toggle-mode-btn ${renderMode === 'cinematic' ? 'active' : ''}`}
-                onClick={() => handleModeChange('cinematic')}
-              >
-                🎬 Cinematic GIF
-              </button>
-            </div>
           </div>
         )}
 
@@ -886,17 +815,8 @@ export default function ConnectPage() {
                   onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                   onTouchEnd={handleDragEnd}
                 >
-                  {renderMode === 'interactive' ? (
-                    /* High-fidelity WebGL 3D Moon Sphere with dynamic Bump Map lighting */
-                    <MoonCanvas yaw={yaw} pitch={pitch} />
-                  ) : (
-                    /* Cinematic looping moon animation GIF */
-                    <div className="moon-gif-render">
-                      <img src="/moon_animation.gif" alt="Rotating Moon" />
-                      {/* Subtle lighting overlay integrated on top of the GIF */}
-                      <div className="moon-lighting" style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.6)' }} />
-                    </div>
-                  )}
+                  {/* High-fidelity WebGL 3D Moon Sphere with dynamic Bump Map lighting */}
+                  <MoonCanvas yaw={yaw} pitch={pitch} />
 
                   {/* Positioning layer for overlay nodes */}
                   <div className="moon-nodes-container">
