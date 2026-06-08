@@ -196,17 +196,31 @@ router.post('/swipe', async (req, res) => {
           data: [
             {
               type: 'match',
-              content: `You matched with ${swiped.username}! 🎉`,
+              content: `You connected with <strong>@${swiped.username}</strong>! 🎉 Start chatting now.`,
               receiverId: swiperId,
               senderId: swipedId,
             },
             {
               type: 'match',
-              content: `You matched with ${swiper.username}! 🎉`,
+              content: `You connected with <strong>@${swiper.username}</strong>! 🎉 Start chatting now.`,
               receiverId: swipedId,
               senderId: swiperId,
             },
           ],
+        });
+      } else {
+        // Connected request notification
+        const swiper = await prisma.user.findUnique({
+          where: { id: swiperId },
+          select: { username: true },
+        });
+        await prisma.notification.create({
+          data: {
+            type: 'connect_request',
+            content: `<strong>@${swiper.username}</strong> wants to connect with you! 🌐 Click here to connect back.`,
+            receiverId: swipedId,
+            senderId: swiperId,
+          },
         });
       }
     }
