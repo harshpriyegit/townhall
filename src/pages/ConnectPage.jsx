@@ -57,6 +57,259 @@ function rotatePoint(point, pitch, yaw) {
   return { xRot, yRot, zRot };
 }
 
+// Vertex Shader Source
+const VS_SOURCE = `
+  attribute vec2 position;
+  varying vec2 vTexCoord;
+  void main() {
+    vTexCoord = position * 0.5 + 0.5;
+    vTexCoord.y = 1.0 - vTexCoord.y; // Flip Y coordinate
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+// Fragment Shader Source (Procedural Ray-Casted Sphere with Height Gradient Bump Map)
+const FS_SOURCE = `
+  precision highp float;
+  varying vec2 vTexCoord;
+  uniform sampler2D uTexture;
+  uniform vec2 uRotation; // yaw (x), pitch (y) in radians
+  uniform vec3 uLightDir;
+  uniform float uBumpScale;
+
+  void main() {
+    vec2 p = vTexCoord * 2.0 - 1.0;
+    float r2 = dot(p, p);
+    if (r2 > 1.0) {
+      discard; // Out of spherical boundary
+    }
+    
+    float z = sqrt(1.0 - r2);
+    vec3 normal = vec3(p.x, p.y, z); // spherical normals in view space
+    
+    // Rotations
+    float yaw = uRotation.x;
+    float pitch = uRotation.y;
+    
+    // 1. Rotate around X axis (pitch)
+    float cosP = cos(pitch);
+    float sinP = sin(pitch);
+    vec3 n1 = vec3(
+      normal.x,
+      normal.y * cosP - normal.z * sinP,
+      normal.y * sinP + normal.z * cosP
+    );
+    
+    // 2. Rotate around Y axis (yaw)
+    float cosY = cos(yaw);
+    float sinY = sin(yaw);
+    vec3 rotatedNormal = vec3(
+      n1.x * cosY + n1.z * sinY,
+      n1.y,
+      -n1.x * sinY + n1.z * cosY
+    );
+    
+    // Map normal coordinates to spherical UVs
+    float pi = 3.14159265359;
+    float u = atan(rotatedNormal.x, rotatedNormal.z) / (2.0 * pi) + 0.5;
+    float v = asin(rotatedNormal.y) / pi + 0.5;
+    
+    // Calculate bump map derivatives (on-the-fly height gradients from diffuse texture map)
+    float eps = 0.002;
+    float h = texture2D(uTexture, vec2(u, v)).r;
+    float h_u = texture2D(uTexture, vec2(u + eps, v)).r;
+    float h_v = texture2D(uTexture, vec2(u, v + eps)).r;
+    
+    // Height difference multipliers
+    float du = (h_u - h) * 16.0;
+    float dv = (h_v - h) * 16.0;
+    
+    // Compute spherical tangents for perturbed normal orientation
+    vec3 tangent = vec3(normal.z, 0.0, -normal.x);
+    if (length(tangent) > 0.0001) {
+      tangent = normalize(tangent);
+    }
+    vec3 bitangent = cross(normal, tangent);
+    
+    // Apply bump mapping
+    vec3 perturbedNormal = normalize(normal - uBumpScale * (tangent * du + bitangent * dv));
+    
+    // Shading calculations (diffuse + ambient light base)
+    float diffuse = max(0.08, dot(perturbedNormal, uLightDir));
+    
+    // Specular highlight (subtle lunar regolith retroreflection)
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    vec3 halfDir = normalize(uLightDir + viewDir);
+    float specular = pow(max(0.0, dot(perturbedNormal, halfDir)), 24.0) * 0.1;
+    
+    // Sample texture map
+    vec4 texColor = texture2D(uTexture, vec2(u, v));
+    
+    // Combine diffuse color, light levels, and soft specular highlights
+    vec3 finalColor = texColor.rgb * (diffuse + specular);
+    
+    // Add soft atmospheric rim scattering glow
+    float rim = 1.0 - z;
+    rim = pow(rim, 3.2) * 0.32;
+    finalColor += vec3(0.85, 0.9, 1.0) * rim;
+    
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+// Helper to normalize light vector
+function vec3Normalize(v) {
+  const len = Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+  if (len > 0.00001) {
+    return [v[0]/len, v[1]/len, v[2]/len];
+  }
+  return [0, 0, 1];
+}
+
+// Custom WebGL Canvas Component to render the 3D Moon with Bump Mapping
+function MoonCanvas({ yaw, pitch }) {
+  const canvasRef = useRef(null);
+  const glRef = useRef(null);
+  const programRef = useRef(null);
+  const textureRef = useRef(null);
+  const imageLoadedRef = useRef(false);
+
+  const draw = () => {
+    const gl = glRef.current;
+    const program = programRef.current;
+    if (!gl || !program || !imageLoadedRef.current) return;
+
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clearColor(0, 0, 0, 0); // Transparent base
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(program);
+
+    // Bind texture
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
+    const uTexture = gl.getUniformLocation(program, 'uTexture');
+    gl.uniform1i(uTexture, 0);
+
+    // Pass yaw & pitch rotation coordinates in radians
+    const uRotation = gl.getUniformLocation(program, 'uRotation');
+    const yawRad = (yaw * Math.PI) / 180;
+    const pitchRad = (pitch * Math.PI) / 180;
+    gl.uniform2f(uRotation, -yawRad, pitchRad);
+
+    // Directional light source from top-left (matches moon visual specifications)
+    const uLightDir = gl.getUniformLocation(program, 'uLightDir');
+    const light = vec3Normalize([-0.5, 0.5, 0.72]);
+    gl.uniform3f(uLightDir, light[0], light[1], light[2]);
+
+    // Bump scale map height details strength
+    const uBumpScale = gl.getUniformLocation(program, 'uBumpScale');
+    gl.uniform1f(uBumpScale, 0.075); 
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      console.error('WebGL not supported by browser.');
+      return;
+    }
+    glRef.current = gl;
+
+    // Compile Shader helper
+    const compileShader = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compiler error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+
+    const vs = compileShader(gl.VERTEX_SHADER, VS_SOURCE);
+    const fs = compileShader(gl.FRAGMENT_SHADER, FS_SOURCE);
+    if (!vs || !fs) return;
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program link error:', gl.getProgramInfoLog(program));
+      return;
+    }
+    programRef.current = program;
+
+    // Full screen rendering quad coordinates
+    const vertices = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const posAttr = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(posAttr);
+    gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+
+    // Initialize Texture
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    textureRef.current = texture;
+
+    // Load full moon diffuse map copied to public folder
+    const img = new Image();
+    img.src = '/moon_map.png';
+    img.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      imageLoadedRef.current = true;
+      draw();
+    };
+
+    return () => {
+      gl.deleteTexture(texture);
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(program);
+    };
+  }, []);
+
+  useEffect(() => {
+    draw();
+  }, [yaw, pitch]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      width={320} 
+      height={320}
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '50%',
+        display: 'block',
+        pointerEvents: 'none' // Clicks slide through to parent wrapper for drag controls
+      }}
+    />
+  );
+}
+
 const MOCK_PROFILES_EXTENDED = [
   // Batch 1 (16 profiles)
   { id: 'mock-1', name: 'Priya', age: 20, branch: 'CSE', bio: 'Coffee addict ☕ | Love hiking and coding marathons', interests: ['Music', 'Travel', 'Coding', 'Coffee'], initials: 'PR', online: true },
@@ -130,8 +383,8 @@ export default function ConnectPage() {
   const [connections, setConnections] = useState([]);
 
   // Rotation parameters
-  const [pitch, setPitch] = useState(0); // vertical tilt in degrees
-  const [yaw, setYaw] = useState(0); // horizontal rotation in degrees
+  const [pitch, setPitch] = useState(0); 
+  const [yaw, setYaw] = useState(0); 
   const [fadeOpacity, setFadeOpacity] = useState(1);
   const [batchIndex, setBatchIndex] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -470,14 +723,6 @@ export default function ConnectPage() {
     return discoverProfiles.slice(batchIndex, batchIndex + 16);
   }, [discoverProfiles, batchIndex]);
 
-  // Texture offset mapping for the sliding rotation effect
-  // yaw maps to horizontal offset; pitch maps to vertical offset
-  const textureStyle = useMemo(() => {
-    return {
-      backgroundPosition: `${yaw * 1.6}px ${pitch * -0.7}px`
-    };
-  }, [yaw, pitch]);
-
   return (
     <div className="connect-page">
       {/* ── Immersive space background (Parallax & Drifts) ───── */}
@@ -535,11 +780,8 @@ export default function ConnectPage() {
                   onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                   onTouchEnd={handleDragEnd}
                 >
-                  {/* Rotating surface texture (craters sliding) */}
-                  <div className="moon-texture" style={textureStyle} />
-
-                  {/* Static shading & solar highlight overlay */}
-                  <div className="moon-lighting" />
+                  {/* High-fidelity WebGL 3D Moon Sphere with dynamic Bump Map lighting */}
+                  <MoonCanvas yaw={yaw} pitch={pitch} />
 
                   {/* Positioning layer for overlay nodes */}
                   <div className="moon-nodes-container">
