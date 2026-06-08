@@ -133,22 +133,25 @@ const FS_SOURCE = `
     );
     
     // Shading calculations (diffuse + ambient light base)
-    float diffuse = max(0.08, dot(perturbedNormal, uLightDir));
+    float diffuse = max(0.02, dot(perturbedNormal, uLightDir));
     
     // Specular highlight (subtle lunar regolith retroreflection)
     vec3 viewDir = vec3(0.0, 0.0, 1.0);
     vec3 halfDir = normalize(uLightDir + viewDir);
-    float specular = pow(max(0.0, dot(perturbedNormal, halfDir)), 24.0) * 0.1;
+    float specular = pow(max(0.0, dot(perturbedNormal, halfDir)), 32.0) * 0.15;
     
     // Sample texture map
     vec4 texColor = texture2D(uTexture, vec2(u, v));
     
+    // Contrast boost to match the high-contrast aesthetic of the Tenor GIF
+    vec3 col = pow(texColor.rgb, vec3(1.15)) * 1.15;
+    
     // Combine diffuse color, light levels, and soft specular highlights
-    vec3 finalColor = texColor.rgb * (diffuse + specular);
+    vec3 finalColor = col * (diffuse + specular);
     
     // Add soft atmospheric rim scattering glow
     float rim = 1.0 - z;
-    rim = pow(rim, 3.2) * 0.32;
+    rim = pow(rim, 3.2) * 0.28;
     finalColor += vec3(0.85, 0.9, 1.0) * rim;
     
     gl_FragColor = vec4(finalColor, 1.0);
@@ -429,18 +432,18 @@ export default function ConnectPage() {
   const previousPos = useRef({ x: 0, y: 0 });
   const accumulatedYaw = useRef(0);
   const apiDiscoverList = useRef([]);
+  const lastInteractionTime = useRef(0);
 
   const handleModeChange = (mode) => {
     setRenderMode(mode);
     if (mode === 'cinematic') {
       setPitch(0); // Reset vertical pitch for flat horizontal rotation
     }
+    lastInteractionTime.current = performance.now();
   };
 
-  // Auto-rotation in cinematic mode to sync nodes with GIF moon rotation
+  // Auto-rotation in both modes (always active in cinematic, and resumes after drag in interactive)
   useEffect(() => {
-    if (renderMode !== 'cinematic') return;
-    
     let lastTime = performance.now();
     let frameId;
     
@@ -448,21 +451,30 @@ export default function ConnectPage() {
       const delta = (time - lastTime) / 1000; // seconds
       lastTime = time;
       
-      // GIF takes 4.6s for a full 360 rotation
-      const rotationSpeed = 360 / 4.6; 
+      const isInteractive = renderMode === 'interactive';
+      const isCinematic = renderMode === 'cinematic';
       
-      setYaw(prev => {
-        const nextYaw = prev + rotationSpeed * delta;
-        accumulatedYaw.current += rotationSpeed * delta;
+      // Auto-rotate if in cinematic mode, OR if in interactive mode and not dragging and 1.5s has passed since drag
+      const shouldAutoRotate = isCinematic || (isInteractive && !isDragging.current && (time - lastInteractionTime.current > 1500));
+      
+      if (shouldAutoRotate) {
+        // GIF takes 4.6s for a full 360 rotation (78.26 deg/sec).
+        // For interactive mode, we use a slower, more elegant rotation (20 deg/sec) so it's easy to tap profiles.
+        const rotationSpeed = isCinematic ? (360 / 4.6) : 20; 
         
-        // Trigger batch swap on 360 degrees
-        if (accumulatedYaw.current >= 360) {
-          accumulatedYaw.current = 0;
-          triggerBatchSwap();
-        }
-        
-        return nextYaw % 360;
-      });
+        setYaw(prev => {
+          const nextYaw = prev + rotationSpeed * delta;
+          accumulatedYaw.current += rotationSpeed * delta;
+          
+          // Trigger batch swap on 360 degrees
+          if (accumulatedYaw.current >= 360) {
+            accumulatedYaw.current = 0;
+            triggerBatchSwap();
+          }
+          
+          return nextYaw % 360;
+        });
+      }
       
       frameId = requestAnimationFrame(animate);
     };
@@ -645,6 +657,7 @@ export default function ConnectPage() {
     if (renderMode === 'cinematic') return; // Disable drag in cinematic mode
     isDragging.current = true;
     previousPos.current = { x, y };
+    lastInteractionTime.current = performance.now();
   };
 
   const handleDragMove = (x, y) => {
@@ -668,6 +681,7 @@ export default function ConnectPage() {
     });
 
     previousPos.current = { x, y };
+    lastInteractionTime.current = performance.now();
 
     // Batch loading trigger: Swap profiles upon 360° of accumulated horizontal rotation
     if (accumulatedYaw.current >= 360) {
@@ -678,6 +692,7 @@ export default function ConnectPage() {
 
   const handleDragEnd = () => {
     isDragging.current = false;
+    lastInteractionTime.current = performance.now();
   };
 
   const triggerBatchSwap = () => {
