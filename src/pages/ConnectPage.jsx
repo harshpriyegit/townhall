@@ -133,8 +133,8 @@ const FS_SOURCE = `
     );
     
     // Shading calculations (diffuse + ambient light base)
-    // Ambient minimum is 0.01 for sharp vacuum deep space shadows
-    float diffuse = max(0.01, dot(perturbedNormal, uLightDir));
+    // Ambient minimum is 0.15 to ensure shadow areas are not fully solid black
+    float diffuse = max(0.15, dot(perturbedNormal, uLightDir));
     
     // Sample texture map
     vec4 texColor = texture2D(uTexture, vec2(u, v));
@@ -200,9 +200,9 @@ function MoonCanvas({ yaw, pitch }) {
     const pitchRad = (pitch * Math.PI) / 180;
     gl.uniform2f(uRotation, yawRad, pitchRad);
 
-    // Directional light source from top-left (matches moon visual specifications)
+    // Directional light source from front-left (matches full moon visual specifications)
     const uLightDir = gl.getUniformLocation(program, 'uLightDir');
-    const light = vec3Normalize([-0.5, 0.5, 0.72]);
+    const light = vec3Normalize([-0.15, 0.15, 0.97]);
     gl.uniform3f(uLightDir, light[0], light[1], light[2]);
 
     // Bump scale map height details strength
@@ -285,8 +285,10 @@ function MoonCanvas({ yaw, pitch }) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     normalMapRef.current = normalMap;
 
+    let active = true;
     let loadedCount = 0;
     const checkAllLoaded = () => {
+      if (!active) return;
       loadedCount++;
       if (loadedCount === 2) {
         imageLoadedRef.current = true;
@@ -298,6 +300,7 @@ function MoonCanvas({ yaw, pitch }) {
     const img = new Image();
     img.src = '/moon_map.png';
     img.onload = () => {
+      if (!active) return;
       gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
       checkAllLoaded();
@@ -307,12 +310,14 @@ function MoonCanvas({ yaw, pitch }) {
     const normalImg = new Image();
     normalImg.src = '/moon_normal.png';
     normalImg.onload = () => {
+      if (!active) return;
       gl.bindTexture(gl.TEXTURE_2D, normalMapRef.current);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, normalImg);
       checkAllLoaded();
     };
 
     return () => {
+      active = false;
       gl.deleteTexture(texture);
       gl.deleteTexture(normalMap);
       gl.deleteBuffer(buffer);
