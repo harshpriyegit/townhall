@@ -88,26 +88,26 @@ const FS_SOURCE = `
     float z = sqrt(1.0 - r2);
     vec3 normal = vec3(p.x, p.y, z); // spherical normals in view space
     
-    // Rotations
+    // Rotations (inverse rotation to map view space normal back to local sphere coordinates)
     float yaw = uRotation.x;
     float pitch = uRotation.y;
     
-    // 1. Rotate around X axis (pitch)
+    // 1. Rotate around X axis (pitch) by -pitch
     float cosP = cos(pitch);
     float sinP = sin(pitch);
     vec3 n1 = vec3(
       normal.x,
-      normal.y * cosP - normal.z * sinP,
-      normal.y * sinP + normal.z * cosP
+      normal.y * cosP + normal.z * sinP,
+      -normal.y * sinP + normal.z * cosP
     );
     
-    // 2. Rotate around Y axis (yaw)
+    // 2. Rotate around Y axis (yaw) by -yaw
     float cosY = cos(yaw);
     float sinY = sin(yaw);
     vec3 rotatedNormal = vec3(
-      n1.x * cosY + n1.z * sinY,
+      n1.x * cosY - n1.z * sinY,
       n1.y,
-      -n1.x * sinY + n1.z * cosY
+      n1.x * sinY + n1.z * cosY
     );
     
     // Map normal coordinates to spherical UVs
@@ -133,26 +133,21 @@ const FS_SOURCE = `
     );
     
     // Shading calculations (diffuse + ambient light base)
-    float diffuse = max(0.02, dot(perturbedNormal, uLightDir));
-    
-    // Specular highlight (subtle lunar regolith retroreflection)
-    vec3 viewDir = vec3(0.0, 0.0, 1.0);
-    vec3 halfDir = normalize(uLightDir + viewDir);
-    float specular = pow(max(0.0, dot(perturbedNormal, halfDir)), 32.0) * 0.15;
+    // Ambient minimum is 0.01 for sharp vacuum deep space shadows
+    float diffuse = max(0.01, dot(perturbedNormal, uLightDir));
     
     // Sample texture map
     vec4 texColor = texture2D(uTexture, vec2(u, v));
     
-    // Contrast boost to match the high-contrast aesthetic of the Tenor GIF
-    vec3 col = pow(texColor.rgb, vec3(1.15)) * 1.15;
+    // Realistic moon albedo tuning (desaturated, warm grey, high contrast)
+    vec3 col = texColor.rgb;
+    col = col * vec3(1.0, 0.98, 0.95); // subtle warm grey tint
+    col = pow(col, vec3(1.15)) * 1.1; // contrast and brightness boost
     
-    // Combine diffuse color, light levels, and soft specular highlights
-    vec3 finalColor = col * (diffuse + specular);
+    // Combine diffuse color and light levels (no shiny specular highlight for realistic matte regolith)
+    vec3 finalColor = col * diffuse;
     
-    // Add soft atmospheric rim scattering glow
-    float rim = 1.0 - z;
-    rim = pow(rim, 3.2) * 0.28;
-    finalColor += vec3(0.85, 0.9, 1.0) * rim;
+    // No atmospheric/rim glow to keep the moon edge sharp against the vacuum of space
     
     gl_FragColor = vec4(finalColor, 1.0);
   }
@@ -203,7 +198,7 @@ function MoonCanvas({ yaw, pitch }) {
     const uRotation = gl.getUniformLocation(program, 'uRotation');
     const yawRad = (yaw * Math.PI) / 180;
     const pitchRad = (pitch * Math.PI) / 180;
-    gl.uniform2f(uRotation, -yawRad, pitchRad);
+    gl.uniform2f(uRotation, yawRad, pitchRad);
 
     // Directional light source from top-left (matches moon visual specifications)
     const uLightDir = gl.getUniformLocation(program, 'uLightDir');
