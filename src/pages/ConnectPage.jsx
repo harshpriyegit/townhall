@@ -68,11 +68,12 @@ const VS_SOURCE = `
   }
 `;
 
-// Fragment Shader Source (Procedural Ray-Casted Sphere with Height Gradient Bump Map)
+// Fragment Shader Source (Procedural Ray-Casted Sphere with Tangent Space Normal Mapping)
 const FS_SOURCE = `
   precision highp float;
   varying vec2 vTexCoord;
   uniform sampler2D uTexture;
+  uniform sampler2D uNormalMap;
   uniform vec2 uRotation; // yaw (x), pitch (y) in radians
   uniform vec3 uLightDir;
   uniform float uBumpScale;
@@ -114,15 +115,8 @@ const FS_SOURCE = `
     float u = atan(rotatedNormal.x, rotatedNormal.z) / (2.0 * pi) + 0.5;
     float v = asin(rotatedNormal.y) / pi + 0.5;
     
-    // Calculate bump map derivatives (on-the-fly height gradients from diffuse texture map)
-    float eps = 0.002;
-    float h = texture2D(uTexture, vec2(u, v)).r;
-    float h_u = texture2D(uTexture, vec2(u + eps, v)).r;
-    float h_v = texture2D(uTexture, vec2(u, v + eps)).r;
-    
-    // Height difference multipliers
-    float du = (h_u - h) * 16.0;
-    float dv = (h_v - h) * 16.0;
+    // Sample normal map texture and unpack from [0, 1] to [-1, 1]
+    vec3 normalTex = texture2D(uNormalMap, vec2(u, v)).rgb * 2.0 - 1.0;
     
     // Compute spherical tangents for perturbed normal orientation
     vec3 tangent = vec3(normal.z, 0.0, -normal.x);
@@ -131,8 +125,12 @@ const FS_SOURCE = `
     }
     vec3 bitangent = cross(normal, tangent);
     
-    // Apply bump mapping
-    vec3 perturbedNormal = normalize(normal - uBumpScale * (tangent * du + bitangent * dv));
+    // Apply normal mapping in view space
+    vec3 perturbedNormal = normalize(
+      tangent * normalTex.x * uBumpScale + 
+      bitangent * normalTex.y * uBumpScale + 
+      normal * normalTex.z
+    );
     
     // Shading calculations (diffuse + ambient light base)
     float diffuse = max(0.08, dot(perturbedNormal, uLightDir));
@@ -172,6 +170,7 @@ function MoonCanvas({ yaw, pitch }) {
   const glRef = useRef(null);
   const programRef = useRef(null);
   const textureRef = useRef(null);
+  const normalMapRef = useRef(null);
   const imageLoadedRef = useRef(false);
 
   const draw = () => {
@@ -185,11 +184,17 @@ function MoonCanvas({ yaw, pitch }) {
 
     gl.useProgram(program);
 
-    // Bind texture
+    // Bind diffuse texture to Texture Unit 0
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
     const uTexture = gl.getUniformLocation(program, 'uTexture');
     gl.uniform1i(uTexture, 0);
+
+    // Bind normal map texture to Texture Unit 1
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, normalMapRef.current);
+    const uNormalMap = gl.getUniformLocation(program, 'uNormalMap');
+    gl.uniform1i(uNormalMap, 1);
 
     // Pass yaw & pitch rotation coordinates in radians
     const uRotation = gl.getUniformLocation(program, 'uRotation');
@@ -204,7 +209,7 @@ function MoonCanvas({ yaw, pitch }) {
 
     // Bump scale map height details strength
     const uBumpScale = gl.getUniformLocation(program, 'uBumpScale');
-    gl.uniform1f(uBumpScale, 0.075); 
+    gl.uniform1f(uBumpScale, 1.2); 
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   };
@@ -264,7 +269,7 @@ function MoonCanvas({ yaw, pitch }) {
     gl.enableVertexAttribArray(posAttr);
     gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
 
-    // Initialize Texture
+    // Initialize Diffuse Texture
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -273,18 +278,45 @@ function MoonCanvas({ yaw, pitch }) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     textureRef.current = texture;
 
-    // Load full moon diffuse map copied to public folder
+    // Initialize Normal Map Texture
+    const normalMap = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, normalMap);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    normalMapRef.current = normalMap;
+
+    let loadedCount = 0;
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 2) {
+        imageLoadedRef.current = true;
+        draw();
+      }
+    };
+
+    // Load full moon diffuse map
     const img = new Image();
     img.src = '/moon_map.png';
     img.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      imageLoadedRef.current = true;
-      draw();
+      checkAllLoaded();
+    };
+
+    // Load pre-generated normal map
+    const normalImg = new Image();
+    normalImg.src = '/moon_normal.png';
+    normalImg.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, normalMapRef.current);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, normalImg);
+      checkAllLoaded();
     };
 
     return () => {
       gl.deleteTexture(texture);
+      gl.deleteTexture(normalMap);
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
     };
