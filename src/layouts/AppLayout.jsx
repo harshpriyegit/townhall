@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getSocket } from '../utils/socket'
+import { usersAPI } from '../utils/api'
 import '../styles/app-layout.css'
 
 const sidebarLinks = [
@@ -14,7 +14,7 @@ const sidebarLinks = [
   { to: '/app/voice-rooms', icon: '🎙️', label: 'Voice Rooms' },
   { to: '/app/study-rooms', icon: '📚', label: 'Study Rooms' },
   { type: 'divider' },
-  { to: '/app/dating', icon: '❤️', label: 'Dating' },
+  { to: '/app/connect', icon: '🌐', label: 'Connect' },
   { to: '/app/cuffing', icon: '🎉', label: 'Cuffing' },
   { to: '/app/radar', icon: '📡', label: 'Radar' },
 ]
@@ -23,7 +23,7 @@ const mobileTabs = [
   { to: '/app', icon: '🏠', label: 'Home', end: true },
   { to: '/app/messages', icon: '💬', label: 'Messages' },
   { to: '/app/anonymous', icon: '🎭', label: 'Anon' },
-  { to: '/app/dating', icon: '❤️', label: 'Dating' },
+  { to: '/app/connect', icon: '🌐', label: 'Connect' },
   { to: '/app/profile', icon: '👤', label: 'Profile' },
 ]
 
@@ -45,6 +45,56 @@ function AppLayout() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeRooms, setActiveRooms] = useState({ voice: false, study: false })
   const dropdownRef = useRef(null)
+
+  // Search states & refs
+  const searchRef = useRef(null)
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsSearchFocused(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Debounced search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchLoading(true)
+      try {
+        const data = await usersAPI.search(searchQuery.trim())
+        setSearchResults(data.users || data || [])
+      } catch (err) {
+        console.error('Failed to search users:', err)
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchQuery])
+
+  // Helper resolving server image URL
+  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : window.location.origin
+
+  function resolveUrl(url) {
+    if (!url) return null
+    if (url.startsWith('http')) return url
+    return `${API_BASE}${url}`
+  }
 
   // Listen for active room counts
   useEffect(() => {
@@ -99,7 +149,7 @@ function AppLayout() {
         </div>
 
         <div className="navbar-center">
-          <div className="navbar-search-wrapper">
+          <div className="navbar-search-wrapper" ref={searchRef}>
             <span className="navbar-search-icon">🔍</span>
             <input
               type="text"
@@ -107,7 +157,41 @@ function AppLayout() {
               placeholder="Search TownHall..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
             />
+            {isSearchFocused && searchQuery.trim() && (
+              <div className="navbar-search-dropdown">
+                {searchLoading ? (
+                  <div className="search-dropdown-loading">Searching...</div>
+                ) : searchResults.length === 0 ? (
+                  <div className="search-dropdown-empty">No users found</div>
+                ) : (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      className="search-dropdown-item"
+                      onClick={() => {
+                        navigate(`/app/profile/${user.username}`)
+                        setSearchQuery('')
+                        setIsSearchFocused(false)
+                      }}
+                    >
+                      <div className="search-item-avatar">
+                        {user.avatar ? (
+                          <img src={resolveUrl(user.avatar)} alt="" />
+                        ) : (
+                          getInitials(user.fullName)
+                        )}
+                      </div>
+                      <div className="search-item-info">
+                        <div className="search-item-name">{user.fullName}</div>
+                        <div className="search-item-username">@{user.username}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 

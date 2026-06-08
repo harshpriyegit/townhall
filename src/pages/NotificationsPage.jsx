@@ -28,6 +28,8 @@ const ICON_MAP = {
   follow: '👤',
   mention: '@',
   event: '🎉',
+  connect_request: '🌐',
+  match: '🤝',
 }
 
 const MOCK_NOTIFICATIONS = [

@@ -12,7 +12,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import AnonymousPage from './pages/AnonymousPage'
 import VoiceRoomsPage from './pages/VoiceRoomsPage'
 import StudyRoomsPage from './pages/StudyRoomsPage'
-import DatingPage from './pages/DatingPage'
+import ConnectPage from './pages/ConnectPage'
 import CuffingPage from './pages/CuffingPage'
 import RadarPage from './pages/RadarPage'
 import './styles/index.css'
@@ -38,7 +38,7 @@ function App() {
             <Route path="anonymous" element={<AnonymousPage />} />
             <Route path="voice-rooms" element={<VoiceRoomsPage />} />
             <Route path="study-rooms" element={<StudyRoomsPage />} />
-            <Route path="dating" element={<DatingPage />} />
+            <Route path="connect" element={<ConnectPage />} />
             <Route path="cuffing" element={<CuffingPage />} />
             <Route path="radar" element={<RadarPage />} />
           </Route>
