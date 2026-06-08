@@ -418,6 +418,7 @@ export default function ConnectPage() {
   const [pitch, setPitch] = useState(0); 
   const [yaw, setYaw] = useState(0); 
   const [fadeOpacity, setFadeOpacity] = useState(1);
+  const [renderMode, setRenderMode] = useState('interactive'); // 'interactive' | 'cinematic'
   const [batchIndex, setBatchIndex] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [connectionSuccess, setConnectionSuccess] = useState(null); // null | { isMatch: boolean }
@@ -428,6 +429,47 @@ export default function ConnectPage() {
   const previousPos = useRef({ x: 0, y: 0 });
   const accumulatedYaw = useRef(0);
   const apiDiscoverList = useRef([]);
+
+  const handleModeChange = (mode) => {
+    setRenderMode(mode);
+    if (mode === 'cinematic') {
+      setPitch(0); // Reset vertical pitch for flat horizontal rotation
+    }
+  };
+
+  // Auto-rotation in cinematic mode to sync nodes with GIF moon rotation
+  useEffect(() => {
+    if (renderMode !== 'cinematic') return;
+    
+    let lastTime = performance.now();
+    let frameId;
+    
+    const animate = (time) => {
+      const delta = (time - lastTime) / 1000; // seconds
+      lastTime = time;
+      
+      // GIF takes 4.6s for a full 360 rotation
+      const rotationSpeed = 360 / 4.6; 
+      
+      setYaw(prev => {
+        const nextYaw = prev + rotationSpeed * delta;
+        accumulatedYaw.current += rotationSpeed * delta;
+        
+        // Trigger batch swap on 360 degrees
+        if (accumulatedYaw.current >= 360) {
+          accumulatedYaw.current = 0;
+          triggerBatchSwap();
+        }
+        
+        return nextYaw % 360;
+      });
+      
+      frameId = requestAnimationFrame(animate);
+    };
+    
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [renderMode, discoverProfiles.length]);
 
   // Preferences configuration state
   const [preferences, setPreferences] = useState(() => {
@@ -600,6 +642,7 @@ export default function ConnectPage() {
 
   // Handle Drag/Touch rotation math
   const handleDragStart = (x, y) => {
+    if (renderMode === 'cinematic') return; // Disable drag in cinematic mode
     isDragging.current = true;
     previousPos.current = { x, y };
   };
@@ -781,10 +824,26 @@ export default function ConnectPage() {
 
         {/* ── Top Bar ───────────────────────────────────────── */}
         {hasProfile && (
-          <div className="connect-top-bar">
+          <div className="connect-top-bar" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="setup-connect-btn" onClick={() => setIsEditing(true)}>
               ⚙️ Set Up Connect
             </button>
+            <div className="moon-mode-toggle">
+              <button 
+                type="button"
+                className={`toggle-mode-btn ${renderMode === 'interactive' ? 'active' : ''}`}
+                onClick={() => handleModeChange('interactive')}
+              >
+                🎮 Interactive 3D
+              </button>
+              <button 
+                type="button"
+                className={`toggle-mode-btn ${renderMode === 'cinematic' ? 'active' : ''}`}
+                onClick={() => handleModeChange('cinematic')}
+              >
+                🎬 Cinematic GIF
+              </button>
+            </div>
           </div>
         )}
 
@@ -812,8 +871,17 @@ export default function ConnectPage() {
                   onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                   onTouchEnd={handleDragEnd}
                 >
-                  {/* High-fidelity WebGL 3D Moon Sphere with dynamic Bump Map lighting */}
-                  <MoonCanvas yaw={yaw} pitch={pitch} />
+                  {renderMode === 'interactive' ? (
+                    /* High-fidelity WebGL 3D Moon Sphere with dynamic Bump Map lighting */
+                    <MoonCanvas yaw={yaw} pitch={pitch} />
+                  ) : (
+                    /* Cinematic looping moon animation GIF */
+                    <div className="moon-gif-render">
+                      <img src="/moon_animation.gif" alt="Rotating Moon" />
+                      {/* Subtle lighting overlay integrated on top of the GIF */}
+                      <div className="moon-lighting" style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.6)' }} />
+                    </div>
+                  )}
 
                   {/* Positioning layer for overlay nodes */}
                   <div className="moon-nodes-container">
