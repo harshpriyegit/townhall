@@ -335,7 +335,7 @@ export default function ConnectPage() {
 
     setPitch(prev => {
       const nextPitch = prev - dy * sensitivity;
-      // Clamp pitch between -60 and 60 degrees to prevent gymbal flipping
+      // Clamp pitch between -60 and 60 degrees to prevent gimbal flipping
       return Math.max(-60, Math.min(60, nextPitch));
     });
 
@@ -470,9 +470,30 @@ export default function ConnectPage() {
     return discoverProfiles.slice(batchIndex, batchIndex + 16);
   }, [discoverProfiles, batchIndex]);
 
+  // Texture offset mapping for the sliding rotation effect
+  // yaw maps to horizontal offset; pitch maps to vertical offset
+  const textureStyle = useMemo(() => {
+    return {
+      backgroundPosition: `${yaw * 1.6}px ${pitch * -0.7}px`
+    };
+  }, [yaw, pitch]);
+
   return (
     <div className="connect-page">
-      <div className="connect-space-stars" />
+      {/* ── Immersive space background (Parallax & Drifts) ───── */}
+      <div className="connect-space-container">
+        <div className="connect-nebula nebula-violet" />
+        <div className="connect-nebula nebula-teal" />
+        <div className="connect-nebula nebula-indigo" />
+        <div className="space-sun-glow" />
+        <div className="starfield starfield-slow stars-distant" />
+        <div className="starfield starfield-slow stars-medium" />
+        <div className="starfield starfield-slow stars-near" />
+        <div className="space-dust dust-pos-1" />
+        <div className="space-dust dust-pos-2" />
+        <div className="space-dust dust-pos-3" />
+      </div>
+
       <div className="connect-container">
         
         {/* ── Header ────────────────────────────────────────── */}
@@ -514,8 +535,11 @@ export default function ConnectPage() {
                   onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
                   onTouchEnd={handleDragEnd}
                 >
-                  {/* Visually realistic textured moon sphere */}
-                  <div className="moon-visual" />
+                  {/* Rotating surface texture (craters sliding) */}
+                  <div className="moon-texture" style={textureStyle} />
+
+                  {/* Static shading & solar highlight overlay */}
+                  <div className="moon-lighting" />
 
                   {/* Positioning layer for overlay nodes */}
                   <div className="moon-nodes-container">
